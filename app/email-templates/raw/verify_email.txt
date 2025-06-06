@@ -1,0 +1,12 @@
+Bonjour {{ username }},
+
+Merci de vous être inscrit sur {{ project_name }}.
+Pour activer votre compte, veuillez cliquer sur le lien ci-dessous :
+
+{{ link }}
+
+Ce lien expirera dans {{ expiration_hours }} heures.
+
+Si vous n’avez pas demandé cette inscription, vous pouvez ignorer ce message.
+
+— L’équipe {{ project_name }}

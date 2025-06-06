@@ -1,0 +1,62 @@
+fais une version raw a partir de a 
+
+<mjml>
+  <mj-head>
+    <mj-title>Vérification de votre adresse email</mj-title>
+    <mj-preview>Confirmez votre compte pour commencer</mj-preview>
+    <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+    <mj-style>
+      .text-muted {
+        color: #6b7280;
+      }
+      .footer {
+        font-size: 12px;
+        color: #9ca3af;
+        text-align: center;
+        padding-top: 32px;
+      }
+      .card {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
+      }
+    </mj-style>
+  </mj-head>
+  <mj-body background-color="#f9fafb">
+    <mj-section padding="48px 0">
+      <mj-column
+        background-color="#ffffff"
+        padding="40px 32px"
+        width="100%"
+        css-class="card"
+      >
+        <mj-text font-size="22px" font-weight="600" color="#111827" padding-bottom="12px">
+          Vérifiez votre adresse email
+        </mj-text>
+        <mj-text font-size="16px" css-class="text-muted" padding-bottom="24px" line-height="26px">
+          Bonjour, {{ username }} <br /><br />
+          Merci de vous être inscrit sur <strong>{{ project_name }}</strong>. Pour activer votre compte, veuillez cliquer sur le bouton ci-dessous :
+        </mj-text>
+        <mj-button
+          href="{{ link }}"
+          background-color="#111827"
+          color="#ffffff"
+          font-size="16px"
+          font-weight="600"
+          border-radius="6px"
+        >
+          Vérifier mon adresse
+        </mj-button>
+        <mj-text font-size="14px" css-class="text-muted" padding-top="24px" line-height="21px">
+          Ce lien expirera dans {{ expiration_hours }} heures. Si vous n’avez pas demandé cette inscription, vous pouvez ignorer ce message.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text css-class="footer">
+          &copy; {{ project_name }} — Tous droits réservés.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
