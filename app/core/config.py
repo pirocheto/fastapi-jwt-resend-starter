@@ -99,7 +99,7 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str
 
     # The API key for the Resend service
-    RESEND_API_KEY: str
+    RESEND_API_KEY: str | None = None
 
     # The email address to send test emails to
     EMAILS_TEST_RECIPIENT: EmailStr = "test@example.com"
