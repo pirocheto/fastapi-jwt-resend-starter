@@ -12,7 +12,6 @@ Perfect for building secure, scalable APIs fast.
 - ✉️ Emails developed with [MJML](https://mjml.io) for responsive design
 - 🧩 Modular and clean project structure
 - 🛡️ Secure password hashing (bcrypt)
-- 🔄 Token refresh endpoint
 - ⚙️ Environment-based config
 - 🧪 Testable and extensible
 - 🖥️ Script `manage.py` to simplify common commands
