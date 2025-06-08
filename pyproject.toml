@@ -19,6 +19,7 @@ dev = [
     "coverage>=7.8.2",
     "faker>=37.3.0",
     "pytest>=8.4.0",
+    "typer>=0.16.0",
     "types-passlib>=1.7.7.20250602",
 ]
 
@@ -26,9 +27,10 @@ dev = [
 strict = true
 exclude = [".venv", "alembic"]
 
+
 [tool.ruff]
 target-version = "py313"
-exclude = ["alembic"]
+exclude = ["alembic", ".venv"]
 line-length = 129
 
 [tool.ruff.lint]

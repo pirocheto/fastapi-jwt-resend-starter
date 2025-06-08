@@ -359,6 +359,7 @@ dev = [
     { name = "coverage" },
     { name = "faker" },
     { name = "pytest" },
+    { name = "typer" },
     { name = "types-passlib" },
 ]
 
@@ -378,6 +379,7 @@ dev = [
     { name = "coverage", specifier = ">=7.8.2" },
     { name = "faker", specifier = ">=37.3.0" },
     { name = "pytest", specifier = ">=8.4.0" },
+    { name = "typer", specifier = ">=0.16.0" },
     { name = "types-passlib", specifier = ">=1.7.7.20250602" },
 ]
 

@@ -15,7 +15,7 @@ from app.core.exceptions import (
 from app.models import User
 from app.services import user_service
 
-reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login/access-token")
+reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token")
 
 
 TokenDep = Annotated[str, Depends(reusable_oauth2)]

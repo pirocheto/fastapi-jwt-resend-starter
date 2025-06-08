@@ -47,10 +47,9 @@ class Settings(BaseSettings):
     # This should be kept secret in production
     SECRET_KEY: str = secrets.token_urlsafe(32)
 
-    # 60 minutes * 24 hours * 8 days = 8 days
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    # 60 minutes * 24 hours * 30 days = 30 days
-    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    # 60 minutes * 24 hours * 7 days = 7 days
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
     # The host for the frontend application
     # This is used for emails
@@ -103,9 +102,9 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str
 
     # The email address to send test emails to
-    EMAIL_TEST_USER: EmailStr = "test@example.com"
+    EMAILS_TEST_RECIPIENT: EmailStr = "test@example.com"
 
-    # The information about the sender of the emails (used in "<name> <email>" format)
+    # The information about the sender of the emails
     EMAILS_FROM_EMAIL: EmailStr | None = None
     EMAILS_FROM_NAME: str | None = None
 
@@ -115,7 +114,7 @@ class Settings(BaseSettings):
             self.EMAILS_FROM_NAME = self.PROJECT_NAME
         return self
 
-    # The expiration time for the email verification token
+    # The expiration time for the password reset token
     PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 24
 
     # The expiration time for the email verification token
@@ -124,7 +123,7 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def emails_enabled(self) -> bool:
-        return bool(self.EMAILS_FROM_EMAIL)
+        return bool(self.RESEND_API_KEY and self.EMAILS_FROM_EMAIL)
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         """

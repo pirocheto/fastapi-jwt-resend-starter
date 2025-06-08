@@ -11,5 +11,6 @@ def test_get_users_me(client: TestClient, db: Session) -> None:
 
     r = client.get(f"{settings.API_V1_STR}/users/me", headers=headers)
     current_user = r.json()
+
     assert r.status_code == 200
     assert current_user["email"] == user.email
