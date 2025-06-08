@@ -69,7 +69,7 @@ def refresh_access_token(session: SessionDep, refresh_token: Annotated[str, Body
 
 
 @router.post("/auth/register", status_code=status.HTTP_201_CREATED)
-def register_new_user(session: SessionDep, user_in: UserRegister = Body(...)) -> Message:
+def register_new_user(session: SessionDep, user_in: UserRegister) -> Message:
     """
     Register a new user.
     """

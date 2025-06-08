@@ -2,7 +2,7 @@ import datetime
 import uuid
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class Tokens(BaseModel):
@@ -42,3 +42,7 @@ class TokenPayload(BaseModel):
 class UpdatePassword(BaseModel):
     token: str
     new_password: str = Field(min_length=8, max_length=40)
+
+
+class Email(BaseModel):
+    email: EmailStr
