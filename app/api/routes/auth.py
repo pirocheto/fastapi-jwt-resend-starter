@@ -4,19 +4,10 @@ from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.dependencies.auth import CurrentUser
+from app.core import exceptions as exc
 from app.core import messages, security
 from app.core.config import settings
 from app.core.database import SessionDep
-from app.core.exceptions import (
-    EmailAlreadyVerifiedException,
-    EmailNotVerifiedException,
-    InactiveUserException,
-    InvalidCredentialsException,
-    PasswordResetTokenInvalidException,
-    UserAlreadyExistsException,
-    UserNotFoundException,
-    VerificationTokenInvalidException,
-)
 from app.schemas.auth import AccessToken, Tokens, UpdatePassword
 from app.schemas.common import Message
 from app.schemas.user import UserCreate, UserRegister, UserUpdate
@@ -33,13 +24,13 @@ def login_for_access_token(session: SessionDep, form_data: Annotated[OAuth2Passw
     user = user_service.authenticate(session=session, email=form_data.username, password=form_data.password)
 
     if not user:
-        raise InvalidCredentialsException()
+        raise exc.InvalidCredentialsException()
 
     if not user.is_active:
-        raise InactiveUserException()
+        raise exc.InactiveUserException()
 
     if not user.email_verified:
-        raise EmailNotVerifiedException()
+        raise exc.EmailNotVerifiedException()
 
     return Tokens(
         access_token=security.create_access_token(user.id),
@@ -55,15 +46,15 @@ def refresh_access_token(session: SessionDep, refresh_token: Annotated[str, Body
     """
     user_id = security.verify_refresh_token(token=refresh_token)
     if not user_id:
-        raise InvalidCredentialsException()
+        raise exc.InvalidCredentialsException()
     user = user_service.get_user_by_id(session=session, user_id=user_id)
 
     if not user:
-        raise UserNotFoundException()
+        raise exc.UserNotFoundException()
     if not user.is_active:
-        raise InactiveUserException()
+        raise exc.InactiveUserException()
     if not user.email_verified:
-        raise EmailNotVerifiedException()
+        raise exc.EmailNotVerifiedException()
 
     return AccessToken(access_token=security.create_access_token(user.id))
 
@@ -75,7 +66,7 @@ def register_new_user(session: SessionDep, user_in: UserRegister) -> Message:
     """
     user = user_service.get_user_by_email(session=session, email=user_in.email)
     if user:
-        raise UserAlreadyExistsException()
+        raise exc.UserAlreadyExistsException()
 
     user_create = UserCreate.model_validate(user_in)
     new_user = user_service.create_user(session=session, user_create=user_create)
@@ -104,7 +95,7 @@ def send_email_reset_password(session: SessionDep, email: str = Body(..., embed=
     """
     user = user_service.get_user_by_email(session=session, email=email)
     if not user:
-        raise UserNotFoundException()
+        raise exc.UserNotFoundException()
 
     token = security.create_password_reset_token(subject=user.id)
 
@@ -135,12 +126,12 @@ def update_password_with_token(
     """
     user_id = security.verify_password_reset_token(token=update_password.token)
     if not user_id:
-        raise PasswordResetTokenInvalidException()
+        raise exc.PasswordResetTokenInvalidException()
 
     user = user_service.get_user_by_id(session=session, user_id=user_id)
 
     if not user:
-        raise UserNotFoundException()
+        raise exc.UserNotFoundException()
 
     user_update = UserUpdate(password=update_password.new_password)
     user_service.update_user(session=session, db_user=user, user_in=user_update)
@@ -166,14 +157,14 @@ def confirm_email_verification(session: SessionDep, token: str = Query(..., desc
     """
     user_id = security.verify_email_verification_token(token=token)
     if not user_id:
-        raise VerificationTokenInvalidException()
+        raise exc.VerificationTokenInvalidException()
 
     user = user_service.get_user_by_id(session=session, user_id=user_id)
 
     if not user:
-        raise UserNotFoundException()
+        raise exc.UserNotFoundException()
     if user.email_verified:
-        raise EmailAlreadyVerifiedException()
+        raise exc.EmailAlreadyVerifiedException()
 
     user_service.verify_user_email(session=session, db_user=user)
     return Message(message=messages.SUCCESS_USER_VERIFIED)
@@ -186,10 +177,10 @@ def resend_verification_email(session: SessionDep, email: str = Body(..., embed=
     """
     user = user_service.get_user_by_email(session=session, email=email)
     if not user:
-        raise UserNotFoundException()
+        raise exc.UserNotFoundException()
 
     if user.email_verified:
-        raise EmailAlreadyVerifiedException()
+        raise exc.EmailAlreadyVerifiedException()
 
     token = security.create_email_verification_token(subject=user.id)
 
