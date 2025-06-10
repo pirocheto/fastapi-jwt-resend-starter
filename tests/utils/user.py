@@ -1,12 +1,9 @@
-import uuid
-
 import faker
 from sqlalchemy.orm import Session
 
-from app.core import security
 from app.models import User
 from app.schemas.user import UserCreate
-from app.services import user_service
+from app.services import token_service, user_service
 
 fake = faker.Faker("fr_FR")
 
@@ -17,7 +14,7 @@ def create_random_user(
     email: str | None = None,
     password: str | None = None,
     username: str | None = None,
-    is_verified: bool = True,
+    email_verified: bool = True,
 ) -> User:
     email = email or fake.email()
     password = password or fake.password()
@@ -27,13 +24,13 @@ def create_random_user(
         email=email,
         username=username,
         password=password,
-        email_verified=is_verified,
+        email_verified=email_verified,
     )
     user = user_service.create_user(session=db, user_create=user_in)
     return user
 
 
-def user_authentication_headers(*, user_id: uuid.UUID) -> dict[str, str]:
-    access_token = security.create_access_token(user_id)
+def user_authentication_headers(*, db_user: User) -> dict[str, str]:
+    access_token = token_service.create_access_token(db_user=db_user)
     headers = {"Authorization": f"Bearer {access_token}"}
     return headers

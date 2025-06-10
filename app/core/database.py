@@ -25,8 +25,8 @@ def init_db(session: Session) -> None:
 
     Base.metadata.create_all(bind=engine)
 
-    stmt = select(User).where(User.email == settings.FIRST_SUPERUSER)
-    user = session.execute(stmt).scalar_one_or_none()
+    statement = select(User).where(User.email == settings.FIRST_SUPERUSER)
+    user = session.execute(statement).scalar_one_or_none()
 
     if not user:
         user_in = UserCreate(

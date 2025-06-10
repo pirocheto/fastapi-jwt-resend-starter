@@ -31,7 +31,7 @@ class UserUpdate(BaseModel):
     is_superuser: bool | None = Field(default=None)
 
 
-class UserPublic(BaseModel):
+class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="forbid")
 
     id: uuid.UUID

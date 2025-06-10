@@ -1,201 +1,253 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.dependencies.auth import CurrentUser
-from app.core import exceptions as exc
-from app.core import messages, security
-from app.core.config import settings
 from app.core.database import SessionDep
-from app.schemas.auth import AccessToken, Tokens, UpdatePassword
-from app.schemas.common import Message
+from app.core.exceptions import (
+    InvalidCredentials,
+    PasswordIncorrect,
+    RefreshTokenInvalid,
+    RefreshTokenNotFound,
+    UserNotFound,
+)
+from app.schemas.auth import (
+    AccessTokenRefresh,
+    PasswordReset,
+    PasswordUpdate,
+    PasswordUpdateToken,
+    Tokens,
+    VerificationResend,
+)
+from app.schemas.base import APIResponse
 from app.schemas.user import UserCreate, UserRegister, UserUpdate
-from app.services import email_service, user_service
+from app.services import email_service, token_service, user_service
 
 router = APIRouter(tags=["auth"])
 
 
 @router.post("/auth/token")
-def login_for_access_token(session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Tokens:
+def login_for_access_token(
+    session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+) -> APIResponse[Tokens]:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    user = user_service.authenticate(session=session, email=form_data.username, password=form_data.password)
+    try:
+        user = user_service.authenticate(
+            session=session,
+            email=form_data.username,
+            password=form_data.password,
+        )
+    except (UserNotFound, PasswordIncorrect):
+        raise InvalidCredentials()
 
-    if not user:
-        raise exc.InvalidCredentialsException()
+    access_token = token_service.create_access_token(db_user=user)
+    refresh_token = token_service.create_refresh_token(session=session, db_user=user)
 
-    if not user.is_active:
-        raise exc.InactiveUserException()
-
-    if not user.email_verified:
-        raise exc.EmailNotVerifiedException()
-
-    return Tokens(
-        access_token=security.create_access_token(user.id),
-        refresh_token=security.create_refresh_token(user.id),
-        token_type="bearer",
+    return APIResponse[Tokens](
+        status="success",
+        code="user_login_success",
+        message="User logged in successfully",
+        data=Tokens(
+            access_token=access_token,
+            refresh_token=refresh_token.token,
+        ),
     )
 
 
 @router.post("/auth/token/refresh")
-def refresh_access_token(session: SessionDep, refresh_token: Annotated[str, Body(..., embed=True)]) -> AccessToken:
+def refresh_access_token(session: SessionDep, data: AccessTokenRefresh) -> APIResponse[Tokens]:
     """
     Refresh the access token using a valid refresh token.
     """
-    user_id = security.verify_refresh_token(token=refresh_token)
-    if not user_id:
-        raise exc.InvalidCredentialsException()
-    user = user_service.get_user_by_id(session=session, user_id=user_id)
+    try:
+        db_refresh_token = token_service.validate_refresh_token(session=session, token=data.refresh_token)
+    except RefreshTokenNotFound:
+        raise RefreshTokenInvalid()
 
-    if not user:
-        raise exc.UserNotFoundException()
-    if not user.is_active:
-        raise exc.InactiveUserException()
-    if not user.email_verified:
-        raise exc.EmailNotVerifiedException()
+    new_refresh_token = token_service.rotate_refresh_token(session=session, db_refresh_token=db_refresh_token)
+    new_access_token = token_service.create_access_token(db_user=db_refresh_token.user)
 
-    return AccessToken(access_token=security.create_access_token(user.id))
+    return APIResponse[Tokens](
+        status="success",
+        code="user_refresh_token_success",
+        message="User access token refreshed successfully",
+        data=Tokens(
+            access_token=new_access_token,
+            refresh_token=new_refresh_token.token,
+        ),
+    )
 
 
 @router.post("/auth/register", status_code=status.HTTP_201_CREATED)
-def register_new_user(session: SessionDep, user_in: UserRegister) -> Message:
+def register_new_user(session: SessionDep, data: UserRegister) -> APIResponse[None]:
     """
     Register a new user.
     """
-    user = user_service.get_user_by_email(session=session, email=user_in.email)
-    if user:
-        raise exc.UserAlreadyExistsException()
+    user_create = UserCreate.model_validate(data)
+    db_user = user_service.create_user(session=session, user_create=user_create)
 
-    user_create = UserCreate.model_validate(user_in)
-    new_user = user_service.create_user(session=session, user_create=user_create)
+    token_data = token_service.create_email_verification_token(
+        session=session,
+        db_user=db_user,
+    )
 
-    token = security.create_email_verification_token(new_user.id)
+    email_data = email_service.generate_verification_email(
+        email_to=db_user.email,
+        username=db_user.username or db_user.email,
+        token=token_data.token,
+    )
 
-    if settings.emails_enabled:
-        email_data = email_service.generate_verification_email(
-            email_to=new_user.email, username=new_user.username or new_user.email, token=token
-        )
+    email_service.send_email(
+        email_to=db_user.email,
+        subject=email_data.subject,
+        html_content=email_data.html_content,
+        raw_content=email_data.raw_content,
+    )
 
-        email_service.send_email(
-            email_to=new_user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-            raw_content=email_data.raw_content,
-        )
-
-    return Message(message=messages.SUCCESS_USER_REGISTERED)
+    return APIResponse(
+        status="success",
+        code="user_registered",
+        message="User registered successfully. Please check your email to verify your account.",
+    )
 
 
 @router.post("/auth/password/forgot", status_code=status.HTTP_200_OK)
-def send_email_reset_password(session: SessionDep, email: str = Body(..., embed=True)) -> Message:
+def send_email_reset_password(session: SessionDep, data: PasswordReset) -> APIResponse[None]:
     """
     Send a password reset link to the user's email.
     """
-    user = user_service.get_user_by_email(session=session, email=email)
-    if not user:
-        raise exc.UserNotFoundException()
+    user = user_service.get_user_by_email(session=session, email=data.email)
 
-    token = security.create_password_reset_token(subject=user.id)
+    db_token = token_service.create_password_reset_token(
+        session=session,
+        db_user=user,
+    )
 
-    if settings.emails_enabled:
-        email_data = email_service.generate_password_reset_email(
-            email_to=user.email,
-            username=user.username or user.email,
-            token=token,
-        )
+    email_data = email_service.generate_password_reset_email(
+        email_to=user.email,
+        username=user.username or user.email,
+        token=db_token.token,
+    )
 
-        email_service.send_email(
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-            raw_content=email_data.raw_content,
-        )
+    email_service.send_email(
+        email_to=user.email,
+        subject=email_data.subject,
+        html_content=email_data.html_content,
+        raw_content=email_data.raw_content,
+    )
 
-    return Message(message=messages.SUCCESS_PASSWORD_RESET_LINK_SENT)
+    return APIResponse(
+        status="success",
+        code="password_reset_link_sent",
+        message="Password reset link sent to your email. Please check your inbox.",
+    )
 
 
 @router.post("/auth/password/reset", status_code=status.HTTP_200_OK)
-def update_password_with_token(
-    session: SessionDep,
-    update_password: UpdatePassword,
-) -> Message:
+def update_password_with_token(session: SessionDep, data: PasswordUpdateToken) -> APIResponse[None]:
     """
     Update the user's password using a valid password reset token.
     """
-    user_id = security.verify_password_reset_token(token=update_password.token)
-    if not user_id:
-        raise exc.PasswordResetTokenInvalidException()
+    db_token = token_service.validate_password_reset_token(
+        session=session,
+        token=data.token,
+    )
 
-    user = user_service.get_user_by_id(session=session, user_id=user_id)
+    user_update = UserUpdate(password=data.new_password)
 
-    if not user:
-        raise exc.UserNotFoundException()
+    user_service.update_user(
+        session=session,
+        db_user=db_token.user,
+        user_in=user_update,
+    )
 
-    user_update = UserUpdate(password=update_password.new_password)
-    user_service.update_user(session=session, db_user=user, user_in=user_update)
-
-    return Message(message=messages.SUCCESS_PASSWORD_RESET)
+    return APIResponse(
+        status="success",
+        code="password_updated",
+        message="Password updated successfully. You can now log in with your new password.",
+    )
 
 
 @router.patch("/auth/password", status_code=status.HTTP_200_OK)
-def update_password(session: SessionDep, current_user: CurrentUser, new_password: str = Body(..., embed=True)) -> Message:
+def update_password(session: SessionDep, current_user: CurrentUser, data: PasswordUpdate) -> APIResponse[None]:
     """
     Update the user's password.
     """
-    user_update = UserUpdate(password=new_password)
-    user_service.update_user(session=session, db_user=current_user, user_in=user_update)
+    user_service.validate_password(
+        db_user=current_user,
+        password=data.current_password,
+    )
 
-    return Message(message=messages.SUCCESS_PASSWORD_UPDATED)
+    user_update = UserUpdate(password=data.new_password)
+
+    user_service.update_user(
+        session=session,
+        db_user=current_user,
+        user_in=user_update,
+    )
+
+    return APIResponse(
+        status="success",
+        code="password_updated",
+        message="Password updated successfully.",
+    )
 
 
 @router.get("/auth/verify-email", status_code=status.HTTP_200_OK)
-def confirm_email_verification(session: SessionDep, token: str = Query(..., description="Email verification token")) -> Message:
+def confirm_email_verification(
+    session: SessionDep, token: str = Query(..., description="Email verification token")
+) -> APIResponse[None]:
     """
     Confirm the user's email address using the token sent to their email.
     """
-    user_id = security.verify_email_verification_token(token=token)
-    if not user_id:
-        raise exc.VerificationTokenInvalidException()
 
-    user = user_service.get_user_by_id(session=session, user_id=user_id)
+    db_token = token_service.validate_email_verification_token(
+        session=session,
+        token=token,
+    )
 
-    if not user:
-        raise exc.UserNotFoundException()
-    if user.email_verified:
-        raise exc.EmailAlreadyVerifiedException()
+    user_update = UserUpdate(email_verified=True)
 
-    user_service.verify_user_email(session=session, db_user=user)
-    return Message(message=messages.SUCCESS_USER_VERIFIED)
+    user_service.update_user(
+        session=session,
+        db_user=db_token.user,
+        user_in=user_update,
+    )
+
+    return APIResponse(
+        status="success",
+        code="user_verified",
+        message="User email verified successfully.",
+    )
 
 
-@router.post("/auth/resend-verification", status_code=status.HTTP_200_OK)
-def resend_verification_email(session: SessionDep, email: str = Body(..., embed=True)) -> Message:
+@router.post("/auth/resend-verification")
+def resend_verification_email(session: SessionDep, data: VerificationResend) -> APIResponse[None]:
     """
     Resend the email verification link to the user.
     """
-    user = user_service.get_user_by_email(session=session, email=email)
-    if not user:
-        raise exc.UserNotFoundException()
+    db_user = user_service.get_user_by_email(session=session, email=data.email)
 
-    if user.email_verified:
-        raise exc.EmailAlreadyVerifiedException()
+    db_token = token_service.create_email_verification_token(session=session, db_user=db_user)
 
-    token = security.create_email_verification_token(subject=user.id)
+    email_data = email_service.generate_verification_email(
+        email_to=db_user.email,
+        username=db_user.username or db_user.email,
+        token=db_token.token,
+    )
 
-    if settings.emails_enabled:
-        email_data = email_service.generate_verification_email(
-            email_to=user.email,
-            username=user.username or user.email,
-            token=token,
-        )
+    email_service.send_email(
+        email_to=db_user.email,
+        subject=email_data.subject,
+        html_content=email_data.html_content,
+        raw_content=email_data.raw_content,
+    )
 
-        email_service.send_email(
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-            raw_content=email_data.raw_content,
-        )
-
-    return Message(message=messages.SUCCESS_EMAIL_VERIFICATION_LINK_SENT)
+    return APIResponse(
+        status="success",
+        code="email_verification_link_sent",
+        message="Email verification link sent successfully. Please check your inbox.",
+    )

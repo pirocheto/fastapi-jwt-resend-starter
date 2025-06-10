@@ -131,7 +131,9 @@ class Settings(BaseSettings):
         and raise an error if it is.
         """
         if value == "changethis":
-            message = f'The value of {var_name} is "changethis", for security, please change it, at least for deployments.'
+            message = (
+                f'The value of {var_name} is "changethis", for security, please change it, at least for deployments.'
+            )
             if self.ENVIRONMENT == "local":
                 # warnings.warn(message, stacklevel=1)
                 logger.warning(message)
@@ -145,7 +147,6 @@ class Settings(BaseSettings):
         and raise an error if they are.
         """
         self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
-
         return self
 
 
