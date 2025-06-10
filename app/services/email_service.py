@@ -59,12 +59,7 @@ def send_email(*, email_to: str, subject: str = "", html_content: str = "", raw_
     resend.Emails.send(params)
 
 
-def generate_verification_email(
-    *,
-    email_to: str,
-    username: str,
-    token: str,
-) -> EmailData:
+def generate_verification_email(*, email_to: str, username: str, token: str) -> EmailData:
     link = f"{settings.FRONTEND_HOST}/verify-email?token={token}"
     context = {
         "email": email_to,
@@ -92,12 +87,7 @@ def generate_verification_email(
     )
 
 
-def generate_password_reset_email(
-    *,
-    email_to: str,
-    username: str,
-    token: str,
-) -> EmailData:
+def generate_password_reset_email(*, email_to: str, username: str, token: str) -> EmailData:
     link = f"{settings.FRONTEND_HOST}/reset-password?token={token}"
     context = {
         "email": email_to,
