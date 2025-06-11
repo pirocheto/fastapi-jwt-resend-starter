@@ -103,7 +103,6 @@ def authenticate(*, session: Session, email: str, password: str) -> User:
     """
     Authenticate a user by email and password.
     """
-
     db_user = get_user_by_email(session=session, email=email)
     if not security.verify_password(password, db_user.password_hash):
         raise PasswordIncorrect()

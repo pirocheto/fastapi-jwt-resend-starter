@@ -49,38 +49,5 @@ def init() -> None:
         init_db(session)
 
 
-@app.command()
-def test(
-    marker: str = typer.Option(
-        None, "--marker", "-m", help="Pytest marker to select tests (default: all markers tested)"
-    ),
-) -> None:
-    """
-    Run the test suite with an optional marker.
-    """
-    import sys
-
-    import coverage
-    import pytest
-
-    cov = coverage.Coverage(source=["app"])
-    cov.start()
-
-    pytest_args = []
-    if marker:
-        pytest_args += ["-m", marker]
-
-    exit_code = pytest.main(pytest_args)
-
-    cov.stop()
-    cov.save()
-
-    cov.report(show_missing=True)
-    cov.html_report(title="coverage")
-
-    if exit_code != 0:
-        sys.exit(exit_code)
-
-
 if __name__ == "__main__":
     app()

@@ -35,6 +35,16 @@ def create_refresh_token(*, session: Session, db_user: User) -> RefreshToken:
         expires_at=token_data.expires_at,
     )
 
+    statement = (
+        update(RefreshToken)
+        .where(
+            RefreshToken.user_id == db_user.id,
+            RefreshToken.is_revoked.is_(False),
+        )
+        .values(is_revoked=True)
+    )
+    session.execute(statement)
+
     session.add(refresh_token)
     session.commit()
     session.refresh(refresh_token)
@@ -42,13 +52,16 @@ def create_refresh_token(*, session: Session, db_user: User) -> RefreshToken:
 
 
 def create_access_token(*, db_user: User) -> str:
+    """
+    Create an access token for a user.
+    """
     token_data = security.create_access_token(user_id=db_user.id)
     return token_data.token
 
 
 def validate_refresh_token(*, session: Session, token: str) -> RefreshToken:
     """
-    Validate a refresh token by checking its existence, expiration, and revocation status.
+    Validate a refresh token by verofying it and returning the associated RefreshToken object.
     """
     statement = select(RefreshToken).options(joinedload(RefreshToken.user)).where(RefreshToken.token == token)
     db_token = session.execute(statement).scalar_one_or_none()
@@ -85,7 +98,7 @@ def validate_access_token(*, session: Session, token: str) -> User:
 
 def validate_email_verification_token(*, session: Session, token: str) -> EmailVerificationToken:
     """
-    Validate an email verification token by checking its existence and expiration.
+    Validate an email verification token by verifyng it and returning the associated EmailVerificationToken object.
     """
     statement = (
         select(EmailVerificationToken)
@@ -105,7 +118,7 @@ def validate_email_verification_token(*, session: Session, token: str) -> EmailV
 
 def validate_password_reset_token(*, session: Session, token: str) -> PasswordResetToken:
     """
-    Validate a password reset token by checking its existence, expiration, and usage status.
+    Validate a password reset token by verifying it and returning the associated PasswordResetToken object.
     """
     statement = (
         select(PasswordResetToken)
@@ -127,17 +140,6 @@ def rotate_refresh_token(*, session: Session, db_refresh_token: RefreshToken) ->
     """
     Rotate (replace) an existing refresh token with a new one.
     """
-    statement = (
-        update(RefreshToken)
-        .where(
-            RefreshToken.user_id == db_refresh_token.user_id,
-            RefreshToken.expires_at < datetime.now(UTC),
-            RefreshToken.is_revoked == False,  # noqa: E712 (False comparison)
-        )
-        .values(is_revoked=True)
-    )
-    session.execute(statement)
-
     token_data = security.create_refresh_token()
 
     new_refresh_db_token = RefreshToken(
@@ -164,17 +166,6 @@ def create_email_verification_token(*, session: Session, db_user: User) -> Email
     """
     Create an email verification token for a user.
     """
-    statement = (
-        update(EmailVerificationToken)
-        .where(
-            EmailVerificationToken.user_id == db_user.id,
-            EmailVerificationToken.expires_at < datetime.now(UTC),
-            EmailVerificationToken.used == False,  # noqa: E712 (False comparison)
-        )
-        .values(used=True)
-    )
-    session.execute(statement)
-
     token_data = security.create_email_verification_token()
 
     email_verification_token = EmailVerificationToken(
@@ -182,6 +173,16 @@ def create_email_verification_token(*, session: Session, db_user: User) -> Email
         token=token_data.token,
         expires_at=token_data.expires_at,
     )
+
+    statement = (
+        update(EmailVerificationToken)
+        .where(
+            EmailVerificationToken.user_id == db_user.id,
+            EmailVerificationToken.used.is_(False),
+        )
+        .values(used=True)
+    )
+    session.execute(statement)
 
     session.add(email_verification_token)
     session.commit()
@@ -194,17 +195,6 @@ def create_password_reset_token(*, session: Session, db_user: User) -> PasswordR
     """
     Create a password reset token for a user.
     """
-    statement = (
-        update(PasswordResetToken)
-        .where(
-            PasswordResetToken.user_id == db_user.id,
-            PasswordResetToken.expires_at < datetime.now(UTC),
-            PasswordResetToken.used == False,  # noqa: E712 (False comparison)
-        )
-        .values(used=True)
-    )
-    session.execute(statement)
-
     token_data = security.create_password_reset_token()
 
     password_reset_token = PasswordResetToken(
@@ -212,6 +202,16 @@ def create_password_reset_token(*, session: Session, db_user: User) -> PasswordR
         token=token_data.token,
         expires_at=token_data.expires_at,
     )
+
+    statement = (
+        update(PasswordResetToken)
+        .where(
+            PasswordResetToken.user_id == db_user.id,
+            PasswordResetToken.used.is_(False),
+        )
+        .values(used=True)
+    )
+    session.execute(statement)
 
     session.add(password_reset_token)
     session.commit()

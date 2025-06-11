@@ -26,6 +26,11 @@ class UserFactory:
         is_active: bool = True,
         commit: bool = True,
     ) -> User:
+        """
+        Create a user with the given parameters.
+        If commit is True, the user will be added to the session and committed.
+        """
+
         user_create = UserCreate(
             email=email or fake.email(),
             username=username or fake.user_name(),
@@ -64,6 +69,11 @@ class PasswordResetTokenFactory:
     def create(
         self, user_id: uuid.UUID, token: str | None = None, used: bool = False, commit: bool = True
     ) -> PasswordResetToken:
+        """
+        Create a password reset token for the given user.
+        If commit is True, the token will be added to the session and committed.
+        """
+
         token_obj = PasswordResetToken(
             user_id=user_id,
             token=token or secrets.token_urlsafe(64),
@@ -85,6 +95,11 @@ class EmailVerificationTokenFactory:
     def create(
         self, user_id: uuid.UUID, token: str | None = None, used: bool = False, commit: bool = True
     ) -> EmailVerificationToken:
+        """
+        Create an email verification token for the given user.
+        If commit is True, the token will be added to the session and committed.
+        """
+
         token_obj = EmailVerificationToken(
             user_id=user_id,
             token=token or secrets.token_urlsafe(64),

@@ -14,40 +14,44 @@ from tests.utils import fake
 
 
 @pytest.fixture(scope="session", autouse=True)
-def session() -> Generator[Session]:
+def create_test_database() -> Generator[None]:
     Base.metadata.create_all(bind=engine)
+    yield
+    # Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(scope="function")
+def session() -> Generator[Session]:
     with Session(engine) as session:
         yield session
 
-    Base.metadata.drop_all(engine)
 
-
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def user_factory(session: Session) -> UserFactory:
     return UserFactory(session)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def password_refresh_token_factory(session: Session) -> RefreshTokenFactory:
     return RefreshTokenFactory(session)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def password_reset_token_factory(session: Session) -> PasswordResetTokenFactory:
     return PasswordResetTokenFactory(session)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def email_verification_token_factory(session: Session) -> EmailVerificationTokenFactory:
     return EmailVerificationTokenFactory(session)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def refresh_token_factory(session: Session) -> RefreshTokenFactory:
     return RefreshTokenFactory(session)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def client() -> Generator[TestClient]:
     with TestClient(app) as client:
         yield client
