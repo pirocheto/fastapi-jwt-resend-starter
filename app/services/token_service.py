@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core import security
 from app.core.exceptions import (
-    EmailAlreadyVerified,
     EmailNotVerified,
     InvalidAccessToken,
     PasswordResetTokenAlreadyUsed,
@@ -39,7 +38,6 @@ def create_refresh_token(*, session: Session, db_user: User) -> RefreshToken:
     session.add(refresh_token)
     session.commit()
     session.refresh(refresh_token)
-
     return refresh_token
 
 
@@ -74,7 +72,6 @@ def validate_access_token(*, session: Session, token: str) -> User:
         raise InvalidAccessToken()
 
     statement = select(User).where(User.id == user_id)
-
     db_user = session.execute(statement).scalar_one_or_none()
 
     if not db_user:
@@ -103,10 +100,6 @@ def validate_email_verification_token(*, session: Session, token: str) -> EmailV
         raise VerificationTokenExpired()
     if db_token.used:
         raise VerificationTokenAlreadyUsed()
-    if not db_token.user.is_active:
-        raise UserInactive()
-    if db_token.user.email_verified:
-        raise EmailAlreadyVerified()
     return db_token
 
 
@@ -114,7 +107,6 @@ def validate_password_reset_token(*, session: Session, token: str) -> PasswordRe
     """
     Validate a password reset token by checking its existence, expiration, and usage status.
     """
-
     statement = (
         select(PasswordResetToken)
         .options(joinedload(PasswordResetToken.user))
@@ -128,10 +120,6 @@ def validate_password_reset_token(*, session: Session, token: str) -> PasswordRe
         raise PasswordResetTokenExpired()
     if db_token.used:
         raise PasswordResetTokenAlreadyUsed()
-    if not db_token.user.is_active:
-        raise UserInactive()
-    if not db_token.user.email_verified:
-        raise EmailNotVerified()
     return db_token
 
 
@@ -139,7 +127,6 @@ def rotate_refresh_token(*, session: Session, db_refresh_token: RefreshToken) ->
     """
     Rotate (replace) an existing refresh token with a new one.
     """
-
     statement = (
         update(RefreshToken)
         .where(
@@ -177,10 +164,6 @@ def create_email_verification_token(*, session: Session, db_user: User) -> Email
     """
     Create an email verification token for a user.
     """
-
-    if db_user.email_verified:
-        raise EmailAlreadyVerified()
-
     statement = (
         update(EmailVerificationToken)
         .where(

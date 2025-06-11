@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.dependencies.auth import CurrentUser
+from app.api.dependencies.auth import VerifiedUser
 from app.schemas.base import APIResponse
 from app.schemas.user import UserOut
 
@@ -8,7 +8,7 @@ router = APIRouter(tags=["users"])
 
 
 @router.get("/users/me")
-def read_user_me(current_user: CurrentUser) -> APIResponse[UserOut]:
+def read_user_me(current_user: VerifiedUser) -> APIResponse[UserOut]:
     """
     Get current user.
     """

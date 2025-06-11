@@ -3,13 +3,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.api.dependencies.auth import CurrentUser
+from app.api.dependencies.auth import ActiveUser
 from app.core.database import SessionDep
 from app.core.exceptions import (
+    EmailAlreadyVerified,
+    EmailNotVerified,
     InvalidCredentials,
     PasswordIncorrect,
     RefreshTokenInvalid,
     RefreshTokenNotFound,
+    UserInactive,
     UserNotFound,
 )
 from app.schemas.auth import (
@@ -67,6 +70,12 @@ def refresh_access_token(session: SessionDep, data: AccessTokenRefresh) -> APIRe
     except RefreshTokenNotFound:
         raise RefreshTokenInvalid()
 
+    if not db_refresh_token.user.is_active:
+        raise UserInactive()
+
+    if not db_refresh_token.user.email_verified:
+        raise EmailNotVerified()
+
     new_refresh_token = token_service.rotate_refresh_token(session=session, db_refresh_token=db_refresh_token)
     new_access_token = token_service.create_access_token(db_user=db_refresh_token.user)
 
@@ -121,6 +130,9 @@ def send_email_reset_password(session: SessionDep, data: PasswordReset) -> APIRe
     """
     user = user_service.get_user_by_email(session=session, email=data.email)
 
+    if not user.is_active:
+        raise UserInactive()
+
     db_token = token_service.create_password_reset_token(
         session=session,
         db_user=user,
@@ -156,6 +168,9 @@ def update_password_with_token(session: SessionDep, data: PasswordUpdateToken) -
         token=data.token,
     )
 
+    if not db_token.user.is_active:
+        raise UserInactive()
+
     user_update = UserUpdate(password=data.new_password)
 
     user_service.update_user(
@@ -172,7 +187,7 @@ def update_password_with_token(session: SessionDep, data: PasswordUpdateToken) -
 
 
 @router.patch("/auth/password", status_code=status.HTTP_200_OK)
-def update_password(session: SessionDep, current_user: CurrentUser, data: PasswordUpdate) -> APIResponse[None]:
+def update_password(session: SessionDep, current_user: ActiveUser, data: PasswordUpdate) -> APIResponse[None]:
     """
     Update the user's password.
     """
@@ -209,6 +224,11 @@ def confirm_email_verification(
         token=token,
     )
 
+    if not db_token.user.is_active:
+        raise UserInactive()
+    if db_token.user.email_verified:
+        raise EmailAlreadyVerified()
+
     user_update = UserUpdate(email_verified=True)
 
     user_service.update_user(
@@ -230,6 +250,11 @@ def resend_verification_email(session: SessionDep, data: VerificationResend) -> 
     Resend the email verification link to the user.
     """
     db_user = user_service.get_user_by_email(session=session, email=data.email)
+
+    if not db_user.is_active:
+        raise UserInactive()
+    if db_user.email_verified:
+        raise EmailAlreadyVerified()
 
     db_token = token_service.create_email_verification_token(session=session, db_user=db_user)
 
