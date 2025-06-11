@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
@@ -30,6 +31,19 @@ def app_exception_handler(request: Request, exc: APIException) -> JSONResponse:
             "status": "error",
             "code": exc.code,
             "message": exc.message,
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status": "error",
+            "code": "validation_error",
+            "message": "Validation error",
+            "details": exc.errors(),
         },
     )
 

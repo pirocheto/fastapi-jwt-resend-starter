@@ -5,7 +5,7 @@ from tests.factories import UserFactory
 
 
 def test_login_user(client: TestClient, user_factory: UserFactory) -> None:
-    password = "defaultpassword"
+    password = "defaultpassword123"
     user = user_factory.create(password=password)
 
     data = {"username": user.email, "password": password}
@@ -19,7 +19,7 @@ def test_login_user(client: TestClient, user_factory: UserFactory) -> None:
 
 
 def test_refresh_access_token(client: TestClient, user_factory: UserFactory) -> None:
-    password = "defaultpassword"
+    password = "defaultpassword123"
     user = user_factory.create(password=password)
 
     # First, log in to get the refresh token

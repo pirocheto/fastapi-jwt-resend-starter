@@ -1,9 +1,7 @@
-fais une version raw a partir de a 
-
 <mjml>
   <mj-head>
-    <mj-title>Vérification de votre adresse email</mj-title>
-    <mj-preview>Confirmez votre compte pour commencer</mj-preview>
+    <mj-title>Email Address Verification</mj-title>
+    <mj-preview>Confirm your account to get started</mj-preview>
     <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
     <mj-style>
       .text-muted {
@@ -30,11 +28,11 @@ fais une version raw a partir de a
         css-class="card"
       >
         <mj-text font-size="22px" font-weight="600" color="#111827" padding-bottom="12px">
-          Vérifiez votre adresse email
+          Verify your email address
         </mj-text>
         <mj-text font-size="16px" css-class="text-muted" padding-bottom="24px" line-height="26px">
-          Bonjour, {{ username }} <br /><br />
-          Merci de vous être inscrit sur <strong>{{ project_name }}</strong>. Pour activer votre compte, veuillez cliquer sur le bouton ci-dessous :
+          Hello, {{ username }} <br /><br />
+          Thank you for signing up on <strong>{{ project_name }}</strong>. To activate your account, please click the button below:
         </mj-text>
         <mj-button
           href="{{ link }}"
@@ -44,17 +42,17 @@ fais une version raw a partir de a
           font-weight="600"
           border-radius="6px"
         >
-          Vérifier mon adresse
+          Verify my address
         </mj-button>
         <mj-text font-size="14px" css-class="text-muted" padding-top="24px" line-height="21px">
-          Ce lien expirera dans {{ expiration_hours }} heures. Si vous n’avez pas demandé cette inscription, vous pouvez ignorer ce message.
+          This link will expire in {{ expiration_hours }} hours. If you did not request this registration, you can ignore this message.
         </mj-text>
       </mj-column>
     </mj-section>
     <mj-section>
       <mj-column>
         <mj-text css-class="footer">
-          &copy; {{ project_name }} — Tous droits réservés.
+          &copy; {{ project_name }} — All rights reserved.
         </mj-text>
       </mj-column>
     </mj-section>

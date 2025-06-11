@@ -19,7 +19,7 @@ def session() -> Generator[Session]:
     Base.metadata.drop_all(engine)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def user_factory(session: Session) -> UserFactory:
     return UserFactory(session)
 
