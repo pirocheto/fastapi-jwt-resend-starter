@@ -95,8 +95,9 @@ class Settings(BaseSettings):
             path=self.POSTGRES_DB,
         )
 
-    FIRST_SUPERUSER: EmailStr
-    FIRST_SUPERUSER_PASSWORD: str
+    DEFAULT_SUPERUSER_EMAIL: EmailStr
+    DEFAULT_SUPERUSER_USERNAME: str
+    DEFAULT_SUPERUSER_PASSWORD: str
 
     # The API key for the Resend service
     RESEND_API_KEY: str | None = None

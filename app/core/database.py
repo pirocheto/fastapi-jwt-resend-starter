@@ -17,15 +17,15 @@ logger = getLogger(__name__)
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 
-def init_superuser(session: Session) -> None:
-    statement = select(User).where(User.email == settings.FIRST_SUPERUSER)
+def init_superuser(*, session: Session, email: str, username: str, password: str) -> None:
+    statement = select(User).where(User.email == email)
     user = session.execute(statement).scalar_one_or_none()
 
     if not user:
         user_in = UserCreate(
-            email=settings.FIRST_SUPERUSER,
-            username=settings.FIRST_SUPERUSER,
-            password=settings.FIRST_SUPERUSER_PASSWORD,
+            email=settings.DEFAULT_SUPERUSER_EMAIL,
+            username=settings.DEFAULT_SUPERUSER_USERNAME,
+            password=settings.DEFAULT_SUPERUSER_PASSWORD,
             is_superuser=True,
             email_verified=True,
         )
@@ -42,6 +42,7 @@ def init_db(session: Session) -> None:
     from app.models import Base
 
     Base.metadata.create_all(bind=engine)
+    logger.info("Database initialized")
 
 
 def get_db() -> Generator[Session]:
