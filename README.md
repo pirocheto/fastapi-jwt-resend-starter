@@ -1,9 +1,6 @@
 # 🚀 fastapi-jwt-resend-starter
 
-A production-ready FastAPI starter with JWT authentication, email sending via Resend, and a modular architecture.  
-Perfect for building secure, scalable APIs fast.
-
----
+A production-ready FastAPI starter with JWT authentication, email sending via Resend, and a modular architecture. Perfect for building secure, scalable APIs fast.
 
 ## 🔐 Features
 
