@@ -16,11 +16,13 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mixer>=7.2.0",
     "coverage>=7.8.2",
-    "faker>=37.3.0",
     "pytest>=8.4.0",
     "typer>=0.16.0",
     "types-passlib>=1.7.7.20250602",
+    "faker>=6.0.0",
+    "polyfactory>=2.21.0",
 ]
 
 [tool.mypy]
