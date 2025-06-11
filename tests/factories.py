@@ -30,7 +30,6 @@ class UserFactory:
         Create a user with the given parameters.
         If commit is True, the user will be added to the session and committed.
         """
-
         user_create = UserCreate(
             email=email or fake.email(),
             username=username or fake.user_name(),
@@ -73,7 +72,6 @@ class PasswordResetTokenFactory:
         Create a password reset token for the given user.
         If commit is True, the token will be added to the session and committed.
         """
-
         token_obj = PasswordResetToken(
             user_id=user_id,
             token=token or secrets.token_urlsafe(64),
@@ -99,7 +97,6 @@ class EmailVerificationTokenFactory:
         Create an email verification token for the given user.
         If commit is True, the token will be added to the session and committed.
         """
-
         token_obj = EmailVerificationToken(
             user_id=user_id,
             token=token or secrets.token_urlsafe(64),
