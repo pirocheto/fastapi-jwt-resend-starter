@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 @app.command()
 def init_database() -> None:
     """
-    Initialize the database with initial data.
+    Initialize the database.
     """
     from sqlalchemy.orm import Session
 
@@ -27,23 +27,36 @@ def init_database() -> None:
 
 
 @app.command()
-def run_tests() -> None:
+def test(
+    marker: str = typer.Option(
+        None, "--marker", "-m", help="Pytest marker to select tests (default: all markers tested)"
+    ),
+) -> None:
     """
-    Run the test suite.
+    Run the test suite with an optional marker.
     """
-    import subprocess
+    import sys
 
-    subprocess.run(["bash", "scripts/test.sh"], check=False)
+    import coverage
+    import pytest
 
+    cov = coverage.Coverage(source=["app"])
+    cov.start()
 
-@app.command()
-def build_emails() -> None:
-    """
-    Build email templates.
-    """
-    import subprocess
+    pytest_args = []
+    if marker:
+        pytest_args += ["-m", marker]
 
-    subprocess.run(["bash", "scripts/build-emails.sh"], check=False)
+    exit_code = pytest.main(pytest_args)
+
+    cov.stop()
+    cov.save()
+
+    cov.report(show_missing=True)
+    cov.html_report(title="coverage")
+
+    if exit_code != 0:
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":

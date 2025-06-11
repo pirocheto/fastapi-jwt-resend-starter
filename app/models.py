@@ -46,7 +46,7 @@ class RefreshToken(Base):
     token: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
     expires_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
-    last_used_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    used_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     is_revoked: Mapped[bool] = mapped_column(Boolean, default=False)
     replaced_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("refresh_tokens.id"), nullable=True

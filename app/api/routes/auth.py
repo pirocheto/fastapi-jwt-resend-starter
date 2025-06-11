@@ -10,10 +10,14 @@ from app.core.exceptions import (
     EmailNotVerified,
     InvalidCredentials,
     PasswordIncorrect,
+    PasswordResetTokenInvalid,
+    PasswordResetTokenNotFound,
     RefreshTokenInvalid,
     RefreshTokenNotFound,
     UserInactive,
     UserNotFound,
+    VerificationTokenInvalid,
+    VerificationTokenNotFound,
 )
 from app.schemas.auth import (
     AccessTokenRefresh,
@@ -124,7 +128,7 @@ def register_new_user(session: SessionDep, data: UserRegister) -> APIResponse[No
 
 
 @router.post("/auth/password/forgot", status_code=status.HTTP_200_OK)
-def send_email_reset_password(session: SessionDep, data: PasswordReset) -> APIResponse[None]:
+def forgot_password(session: SessionDep, data: PasswordReset) -> APIResponse[None]:
     """
     Send a password reset link to the user's email.
     """
@@ -163,10 +167,13 @@ def update_password_with_token(session: SessionDep, data: PasswordUpdateToken) -
     """
     Update the user's password using a valid password reset token.
     """
-    db_token = token_service.validate_password_reset_token(
-        session=session,
-        token=data.token,
-    )
+    try:
+        db_token = token_service.validate_password_reset_token(
+            session=session,
+            token=data.token,
+        )
+    except PasswordResetTokenNotFound:
+        raise PasswordResetTokenInvalid()
 
     if not db_token.user.is_active:
         raise UserInactive()
@@ -178,6 +185,9 @@ def update_password_with_token(session: SessionDep, data: PasswordUpdateToken) -
         db_user=db_token.user,
         user_in=user_update,
     )
+
+    # Mark all password reset tokens for this user as used
+    token_service.mark_password_reset_token_as_used(session=session, db_token=db_token)
 
     return APIResponse(
         status="success",
@@ -219,10 +229,13 @@ def confirm_email_verification(
     Confirm the user's email address using the token sent to their email.
     """
 
-    db_token = token_service.validate_email_verification_token(
-        session=session,
-        token=token,
-    )
+    try:
+        db_token = token_service.validate_email_verification_token(
+            session=session,
+            token=token,
+        )
+    except VerificationTokenNotFound:
+        raise VerificationTokenInvalid()
 
     if not db_token.user.is_active:
         raise UserInactive()
@@ -236,6 +249,9 @@ def confirm_email_verification(
         db_user=db_token.user,
         user_in=user_update,
     )
+
+    # Mark the email verification token as used
+    token_service.mark_email_verification_token_as_used(session=session, db_token=db_token)
 
     return APIResponse(
         status="success",
@@ -273,6 +289,6 @@ def resend_verification_email(session: SessionDep, data: VerificationResend) -> 
 
     return APIResponse(
         status="success",
-        code="email_verification_link_sent",
+        code="verification_email_sent",
         message="Email verification link sent successfully. Please check your inbox.",
     )

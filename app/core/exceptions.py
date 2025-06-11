@@ -108,6 +108,15 @@ class PasswordResetTokenNotFound(APIException):
         )
 
 
+class PasswordResetTokenInvalid(APIException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="password_reset_token_invalid",
+            message="The password reset token is invalid",
+        )
+
+
 class PasswordResetTokenAlreadyUsed(APIException):
     def __init__(self) -> None:
         super().__init__(
@@ -120,7 +129,7 @@ class PasswordResetTokenAlreadyUsed(APIException):
 class PasswordIncorrect(APIException):
     def __init__(self) -> None:
         super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             code="password_incorrect",
             message="The provided password is incorrect.",
         )
@@ -132,6 +141,15 @@ class VerificationTokenNotFound(APIException):
             status_code=status.HTTP_404_NOT_FOUND,
             code="verification_token_not_found",
             message="Verification token not found.",
+        )
+
+
+class VerificationTokenInvalid(APIException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="verification_token_invalid",
+            message="The verification token is invalid.",
         )
 
 

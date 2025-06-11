@@ -1,12 +1,10 @@
-from fastapi import FastAPI, Request
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
+from app.api.exception_handlers import register_exception_handlers
 from app.api.main import api_router
 from app.core.config import settings
-from app.core.exceptions import APIException
 
 app = FastAPI()
 
@@ -22,31 +20,7 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
 )
 
-
-@app.exception_handler(APIException)
-def app_exception_handler(request: Request, exc: APIException) -> JSONResponse:
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "status": "error",
-            "code": exc.code,
-            "message": exc.message,
-        },
-    )
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    return JSONResponse(
-        status_code=422,
-        content={
-            "status": "error",
-            "code": "validation_error",
-            "message": "Validation error",
-            "details": exc.errors(),
-        },
-    )
-
+register_exception_handlers(app)
 
 if settings.all_cors_origins:
     app.add_middleware(

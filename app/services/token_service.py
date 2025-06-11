@@ -150,7 +150,7 @@ def rotate_refresh_token(*, session: Session, db_refresh_token: RefreshToken) ->
     session.add(new_refresh_db_token)
     session.flush()
 
-    db_refresh_token.last_used_at = datetime.now(UTC)
+    db_refresh_token.used_at = datetime.now(UTC)
     db_refresh_token.is_revoked = True
     db_refresh_token.replaced_by = new_refresh_db_token.id
 
@@ -217,3 +217,27 @@ def create_password_reset_token(*, session: Session, db_user: User) -> PasswordR
     session.commit()
     session.refresh(password_reset_token)
     return password_reset_token
+
+
+def mark_password_reset_token_as_used(*, session: Session, db_token: PasswordResetToken) -> PasswordResetToken:
+    """
+    Mark a password reset token as used.
+    """
+    db_token.used = True
+
+    session.commit()
+    session.refresh(db_token)
+    return db_token
+
+
+def mark_email_verification_token_as_used(
+    *, session: Session, db_token: EmailVerificationToken
+) -> EmailVerificationToken:
+    """
+    Mark an email verification token as used.
+    """
+    db_token.used = True
+
+    session.commit()
+    session.refresh(db_token)
+    return db_token
