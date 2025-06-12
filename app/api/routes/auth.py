@@ -117,7 +117,7 @@ async def register_new_user(session: SessionDep, data: UserRegister) -> APIRespo
     )
 
 
-@router.post("/auth/password/forgot", status_code=status.HTTP_200_OK)
+@router.post("/auth/password/forgot")
 async def forgot_password(session: SessionDep, data: PasswordReset) -> APIResponse:
     """
     Send a password reset link to the user's email.
@@ -152,7 +152,7 @@ async def forgot_password(session: SessionDep, data: PasswordReset) -> APIRespon
     )
 
 
-@router.post("/auth/password/reset", status_code=status.HTTP_200_OK)
+@router.post("/auth/password/reset")
 async def update_password_with_token(session: SessionDep, data: PasswordUpdateToken) -> APIResponse:
     """
     Update the user's password using a valid password reset token.
@@ -186,7 +186,7 @@ async def update_password_with_token(session: SessionDep, data: PasswordUpdateTo
     )
 
 
-@router.patch("/auth/password", status_code=status.HTTP_200_OK)
+@router.patch("/auth/password")
 async def update_password(session: SessionDep, current_user: ActiveUser, data: PasswordUpdate) -> APIResponse:
     """
     Update the user's password.
@@ -211,7 +211,7 @@ async def update_password(session: SessionDep, current_user: ActiveUser, data: P
     )
 
 
-@router.get("/auth/verify-email", status_code=status.HTTP_200_OK)
+@router.get("/auth/verify-email")
 async def confirm_email_verification(
     session: SessionDep, token: str = Query(..., description="Email verification token")
 ) -> APIResponse:
