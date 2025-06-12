@@ -5,10 +5,12 @@ A production-ready FastAPI starter with JWT authentication, email sending via Re
 ## 🔐 Features
 
 - ✅ JWT Authentication (JWT Access Token and Opaque Refresh Token)
+- 🔑 Email verification on registration
+- 🔄 Forgot password functionality
 - 📧 Email sending via [Resend](https://resend.com)
 - ✉️ Emails developed with [MJML](https://mjml.io) for responsive design
-- 🧩 Modular and clean project structure
 - 🛡️ Secure password hashing (bcrypt)
-- 🧪 Testable and extensible
 - 🗄️ Database integration with [SQLAlchemy](https://www.sqlalchemy.org/)
 - 🌱 Environment and dependency management with [uv](https://github.com/uv-org/uv)
+- 🧩 Modular and clean project structure
+- 🧪 Includes unit tests and integration tests
