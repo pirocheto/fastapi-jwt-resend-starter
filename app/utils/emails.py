@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import resend
@@ -10,6 +9,10 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+BASE_DIR = settings.app_dir
+
+resend.api_key = settings.RESEND_API_KEY
+
 
 @dataclass
 class EmailData:
@@ -18,12 +21,9 @@ class EmailData:
     raw_content: str = ""
 
 
-resend.api_key = settings.RESEND_API_KEY
-
-
 TEMPLATE_DIRS = {
-    "html": Path("app/email-templates/html/build"),
-    "raw": Path("app/email-templates/raw"),
+    "html": BASE_DIR / "email-templates/html/build",
+    "raw": BASE_DIR / "email-templates/raw",
 }
 
 
@@ -78,7 +78,7 @@ def generate_verification_email(*, email_to: str, username: str, token: str) -> 
         context=context,
         template_type="raw",
     )
-    subject = "Vérification de votre adresse email"
+    subject = "Email Address Verification"
 
     return EmailData(
         subject=subject,
@@ -106,7 +106,7 @@ def generate_password_reset_email(*, email_to: str, username: str, token: str) -
         context=context,
         template_type="raw",
     )
-    subject = "Réinitialisation de votre mot de passe"
+    subject = "Password Reset Request"
 
     return EmailData(
         subject=subject,

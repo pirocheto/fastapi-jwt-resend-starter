@@ -3,7 +3,7 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import security
 from app.core.exceptions import UserAlreadyExists
@@ -13,10 +13,10 @@ from tests.utils import fake
 
 
 class UserFactory:
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self, async_session: AsyncSession):
+        self.async_session = async_session
 
-    def create(
+    async def create(
         self,
         email: str | None = None,
         username: str | None = None,
@@ -28,7 +28,7 @@ class UserFactory:
     ) -> User:
         """
         Create a user with the given parameters.
-        If commit is True, the user will be added to the session and committed.
+        If commit is True, the user will be added to the async_session and committed.
         """
         user_create = UserCreate(
             email=email or fake.email(),
@@ -40,7 +40,8 @@ class UserFactory:
         )
 
         statement = select(User).where(User.email == user_create.email)
-        user = self.session.execute(statement).scalar_one_or_none()
+        result = await self.async_session.execute(statement)
+        user = result.scalar_one_or_none()
         if user:
             raise UserAlreadyExists()
 
@@ -50,27 +51,27 @@ class UserFactory:
         user_obj = User(**update_dict)
 
         if commit:
-            self.session.add(user_obj)
+            self.async_session.add(user_obj)
             try:
-                self.session.commit()
-                self.session.refresh(user_obj)
+                await self.async_session.commit()
+                await self.async_session.refresh(user_obj)
             except IntegrityError:
-                self.session.rollback()
+                await self.async_session.rollback()
                 raise UserAlreadyExists()
 
         return user_obj
 
 
 class PasswordResetTokenFactory:
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self, async_session: AsyncSession):
+        self.async_session = async_session
 
-    def create(
+    async def create(
         self, user_id: uuid.UUID, token: str | None = None, used: bool = False, commit: bool = True
     ) -> PasswordResetToken:
         """
         Create a password reset token for the given user.
-        If commit is True, the token will be added to the session and committed.
+        If commit is True, the token will be added to the async_session and committed.
         """
         token_obj = PasswordResetToken(
             user_id=user_id,
@@ -79,23 +80,23 @@ class PasswordResetTokenFactory:
             used=used,
         )
         if commit:
-            self.session.add(token_obj)
-            self.session.commit()
-            self.session.refresh(token_obj)
+            self.async_session.add(token_obj)
+            await self.async_session.commit()
+            await self.async_session.refresh(token_obj)
 
         return token_obj
 
 
 class EmailVerificationTokenFactory:
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self, async_session: AsyncSession):
+        self.async_session = async_session
 
-    def create(
+    async def create(
         self, user_id: uuid.UUID, token: str | None = None, used: bool = False, commit: bool = True
     ) -> EmailVerificationToken:
         """
         Create an email verification token for the given user.
-        If commit is True, the token will be added to the session and committed.
+        If commit is True, the token will be added to the async_session and committed.
         """
         token_obj = EmailVerificationToken(
             user_id=user_id,
@@ -104,18 +105,18 @@ class EmailVerificationTokenFactory:
             used=used,
         )
         if commit:
-            self.session.add(token_obj)
-            self.session.commit()
-            self.session.refresh(token_obj)
+            self.async_session.add(token_obj)
+            await self.async_session.commit()
+            await self.async_session.refresh(token_obj)
 
         return token_obj
 
 
 class RefreshTokenFactory:
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self, async_session: AsyncSession):
+        self.async_session = async_session
 
-    def create(
+    async def create(
         self, user_id: uuid.UUID, token: str | None = None, is_revoked: bool = False, commit: bool = True
     ) -> RefreshToken:
         token_obj = RefreshToken(
@@ -125,8 +126,8 @@ class RefreshTokenFactory:
             is_revoked=is_revoked,
         )
         if commit:
-            self.session.add(token_obj)
-            self.session.commit()
-            self.session.refresh(token_obj)
+            self.async_session.add(token_obj)
+            await self.async_session.commit()
+            await self.async_session.refresh(token_obj)
 
         return token_obj

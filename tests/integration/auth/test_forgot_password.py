@@ -1,32 +1,39 @@
 import pytest
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from tests.factories import PasswordResetTokenFactory, UserFactory
 from tests.utils import fake
 
+pytestmark = [
+    pytest.mark.anyio,
+    pytest.mark.integration,
+]
 
-@pytest.mark.integration
-def test_send_email_reset_password(client: TestClient, user_factory: UserFactory) -> None:
+
+async def test_send_email_reset_password_success(async_client: AsyncClient, user_factory: UserFactory) -> None:
     password = fake.password()
-    user = user_factory.create(password=password)
+    user = await user_factory.create(password=password)
 
     reset_data = {"email": user.email}
-    response = client.post(f"{settings.API_V1_STR}/auth/password/forgot", json=reset_data)
+
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/password/forgot", json=reset_data)
+
     response_data = response.json()
 
     assert response.status_code == 200
     assert response_data["status"] == "success"
     assert response_data["code"] == "password_reset_link_sent"
 
+    assert True
 
-@pytest.mark.integration
-def test_send_email_reset_password_user_inactive(client: TestClient, user_factory: UserFactory) -> None:
-    user = user_factory.create(is_active=False)
+
+async def test_send_email_reset_password_user_inactive(async_client: AsyncClient, user_factory: UserFactory) -> None:
+    user = await user_factory.create(is_active=False)
 
     reset_data = {"email": user.email}
-    response = client.post(f"{settings.API_V1_STR}/auth/password/forgot", json=reset_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/password/forgot", json=reset_data)
     response_data = response.json()
 
     assert response.status_code == 403
@@ -35,9 +42,9 @@ def test_send_email_reset_password_user_inactive(client: TestClient, user_factor
 
 
 @pytest.mark.integration
-def test_send_email_reset_password_user_not_found(client: TestClient) -> None:
+async def test_send_email_reset_password_user_not_found(async_client: AsyncClient) -> None:
     reset_data = {"email": fake.email()}
-    response = client.post(f"{settings.API_V1_STR}/auth/password/forgot", json=reset_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/password/forgot", json=reset_data)
     response_data = response.json()
 
     assert response.status_code == 404
@@ -46,9 +53,9 @@ def test_send_email_reset_password_user_not_found(client: TestClient) -> None:
 
 
 @pytest.mark.integration
-def test_send_email_reset_password_invalid_email(client: TestClient) -> None:
+async def test_send_email_reset_password_invalid_email(async_client: AsyncClient) -> None:
     reset_data = {"email": "invalid-email"}
-    response = client.post(f"{settings.API_V1_STR}/auth/password/forgot", json=reset_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/password/forgot", json=reset_data)
     response_data = response.json()
 
     assert response.status_code == 422
@@ -57,17 +64,17 @@ def test_send_email_reset_password_invalid_email(client: TestClient) -> None:
 
 
 @pytest.mark.integration
-def test_reset_password_with_link(
-    session: Session,
-    client: TestClient,
+async def test_reset_password_with_link(
+    async_session: Session,
+    async_client: AsyncClient,
     user_factory: UserFactory,
     password_reset_token_factory: PasswordResetTokenFactory,
 ) -> None:
-    user = user_factory.create()
-    db_token = password_reset_token_factory.create(user_id=user.id)
+    user = await user_factory.create()
+    db_token = await password_reset_token_factory.create(user_id=user.id)
 
     update_data = {"token": db_token.token, "new_password": fake.password()}
-    response = client.post(f"{settings.API_V1_STR}/auth/password/reset", json=update_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/password/reset", json=update_data)
     response_data = response.json()
 
     assert response.status_code == 200
@@ -76,9 +83,9 @@ def test_reset_password_with_link(
 
 
 @pytest.mark.integration
-def test_reset_password_with_invalid_link(client: TestClient) -> None:
+async def test_reset_password_with_invalid_link(async_client: AsyncClient) -> None:
     update_data = {"token": "invalid_token", "new_password": fake.password()}
-    response = client.post(f"{settings.API_V1_STR}/auth/password/reset", json=update_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/password/reset", json=update_data)
     response_data = response.json()
 
     assert response.status_code == 400
@@ -87,17 +94,17 @@ def test_reset_password_with_invalid_link(client: TestClient) -> None:
 
 
 @pytest.mark.integration
-def test_reset_password_with_used_link(
-    session: Session,
-    client: TestClient,
+async def test_reset_password_with_used_link(
+    async_session: Session,
+    async_client: AsyncClient,
     user_factory: UserFactory,
     password_reset_token_factory: PasswordResetTokenFactory,
 ) -> None:
-    user = user_factory.create()
-    db_token = password_reset_token_factory.create(user_id=user.id, used=True)
+    user = await user_factory.create()
+    db_token = await password_reset_token_factory.create(user_id=user.id, used=True)
 
     update_data = {"token": db_token.token, "new_password": fake.password()}
-    response = client.post(f"{settings.API_V1_STR}/auth/password/reset", json=update_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/password/reset", json=update_data)
     response_data = response.json()
     assert response.status_code == 400
     assert response_data["status"] == "error"
@@ -105,17 +112,16 @@ def test_reset_password_with_used_link(
 
 
 @pytest.mark.integration
-def test_reset_password_with_inactive_user(
-    session: Session,
-    client: TestClient,
+async def test_reset_password_with_inactive_user(
+    async_client: AsyncClient,
     user_factory: UserFactory,
     password_reset_token_factory: PasswordResetTokenFactory,
 ) -> None:
-    user = user_factory.create(is_active=False)
-    db_token = password_reset_token_factory.create(user_id=user.id)
+    user = await user_factory.create(is_active=False)
+    db_token = await password_reset_token_factory.create(user_id=user.id)
 
     update_data = {"token": db_token.token, "new_password": fake.password()}
-    response = client.post(f"{settings.API_V1_STR}/auth/password/reset", json=update_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/password/reset", json=update_data)
     response_data = response.json()
 
     assert response.status_code == 403

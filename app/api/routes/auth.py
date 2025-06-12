@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.dependencies.auth import ActiveUser
-from app.core.database import SessionDep
+from app.core.database import AsyncSessionDep
 from app.core.exceptions import (
     EmailAlreadyVerified,
     EmailNotVerified,
@@ -36,22 +36,22 @@ router = APIRouter(tags=["auth"])
 
 @router.post("/auth/token")
 async def login_for_access_token(
-    session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    async_session: AsyncSessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ) -> Tokens:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
     try:
-        user = user_service.authenticate(
-            session=session,
+        user = await user_service.authenticate(
+            async_session=async_session,
             email=form_data.username,
             password=form_data.password,
         )
     except (UserNotFound, PasswordIncorrect):
         raise InvalidCredentials()
 
-    access_token = token_service.create_access_token(db_user=user)
-    refresh_token = token_service.create_refresh_token(session=session, db_user=user)
+    access_token = await token_service.create_access_token(db_user=user)
+    refresh_token = await token_service.create_refresh_token(async_session=async_session, db_user=user)
 
     return Tokens(
         access_token=access_token,
@@ -60,12 +60,14 @@ async def login_for_access_token(
 
 
 @router.post("/auth/token/refresh")
-async def refresh_access_token(session: SessionDep, data: AccessTokenRefresh) -> Tokens:
+async def refresh_access_token(async_session: AsyncSessionDep, data: AccessTokenRefresh) -> Tokens:
     """
     Refresh the access token using a valid refresh token.
     """
     try:
-        db_refresh_token = token_service.validate_refresh_token(session=session, token=data.refresh_token)
+        db_refresh_token = await token_service.validate_refresh_token(
+            async_session=async_session, token=data.refresh_token
+        )
     except RefreshTokenNotFound:
         raise RefreshTokenInvalid()
 
@@ -75,8 +77,10 @@ async def refresh_access_token(session: SessionDep, data: AccessTokenRefresh) ->
     if not db_refresh_token.user.email_verified:
         raise EmailNotVerified()
 
-    new_refresh_token = token_service.rotate_refresh_token(session=session, db_refresh_token=db_refresh_token)
-    new_access_token = token_service.create_access_token(db_user=db_refresh_token.user)
+    new_refresh_token = await token_service.rotate_refresh_token(
+        async_session=async_session, db_refresh_token=db_refresh_token
+    )
+    new_access_token = await token_service.create_access_token(db_user=db_refresh_token.user)
 
     return Tokens(
         access_token=new_access_token,
@@ -85,15 +89,15 @@ async def refresh_access_token(session: SessionDep, data: AccessTokenRefresh) ->
 
 
 @router.post("/auth/register", status_code=status.HTTP_201_CREATED)
-async def register_new_user(session: SessionDep, data: UserRegister) -> APIResponse:
+async def register_new_user(async_session: AsyncSessionDep, data: UserRegister) -> APIResponse:
     """
     Register a new user.
     """
     user_create = UserCreate.model_validate(data)
-    db_user = user_service.create_user(session=session, user_create=user_create)
+    db_user = await user_service.create_user(async_session=async_session, user_create=user_create)
 
-    token_data = token_service.create_email_verification_token(
-        session=session,
+    token_data = await token_service.create_email_verification_token(
+        async_session=async_session,
         db_user=db_user,
     )
 
@@ -118,28 +122,34 @@ async def register_new_user(session: SessionDep, data: UserRegister) -> APIRespo
 
 
 @router.post("/auth/password/forgot")
-async def forgot_password(session: SessionDep, data: PasswordReset) -> APIResponse:
+async def forgot_password(async_session: AsyncSessionDep, data: PasswordReset) -> APIResponse:
     """
     Send a password reset link to the user's email.
     """
-    user = user_service.get_user_by_email(session=session, email=data.email)
-
-    if not user.is_active:
-        raise UserInactive()
-
-    db_token = token_service.create_password_reset_token(
-        session=session,
-        db_user=user,
+    db_user = await user_service.get_user_by_email(
+        async_session=async_session,
+        email=data.email,
     )
 
+    user_email = db_user.email
+    user_username = db_user.username or db_user.email
+
+    if not db_user.is_active:
+        raise UserInactive()
+
+    db_token = await token_service.create_password_reset_token(
+        async_session=async_session,
+        db_user=db_user,
+    )
+
+    token = db_token.token
+
     email_data = email_service.generate_password_reset_email(
-        email_to=user.email,
-        username=user.username or user.email,
-        token=db_token.token,
+        email_to=user_email, username=user_username or user_email, token=token
     )
 
     email_service.send_email(
-        email_to=user.email,
+        email_to=user_email,
         subject=email_data.subject,
         html_content=email_data.html_content,
         raw_content=email_data.raw_content,
@@ -153,13 +163,13 @@ async def forgot_password(session: SessionDep, data: PasswordReset) -> APIRespon
 
 
 @router.post("/auth/password/reset")
-async def update_password_with_token(session: SessionDep, data: PasswordUpdateToken) -> APIResponse:
+async def update_password_with_token(async_session: AsyncSessionDep, data: PasswordUpdateToken) -> APIResponse:
     """
     Update the user's password using a valid password reset token.
     """
     try:
-        db_token = token_service.validate_password_reset_token(
-            session=session,
+        db_token = await token_service.validate_password_reset_token(
+            async_session=async_session,
             token=data.token,
         )
     except PasswordResetTokenNotFound:
@@ -170,14 +180,14 @@ async def update_password_with_token(session: SessionDep, data: PasswordUpdateTo
 
     user_update = UserUpdate(password=data.new_password)
 
-    user_service.update_user(
-        session=session,
+    await user_service.update_user(
+        async_session=async_session,
         db_user=db_token.user,
         user_in=user_update,
     )
 
     # Mark all password reset tokens for this user as used
-    token_service.mark_password_reset_token_as_used(session=session, db_token=db_token)
+    await token_service.mark_password_reset_token_as_used(async_session=async_session, db_token=db_token)
 
     return APIResponse(
         status="success",
@@ -187,7 +197,9 @@ async def update_password_with_token(session: SessionDep, data: PasswordUpdateTo
 
 
 @router.patch("/auth/password")
-async def update_password(session: SessionDep, current_user: ActiveUser, data: PasswordUpdate) -> APIResponse:
+async def update_password(
+    async_session: AsyncSessionDep, current_user: ActiveUser, data: PasswordUpdate
+) -> APIResponse:
     """
     Update the user's password.
     """
@@ -198,8 +210,8 @@ async def update_password(session: SessionDep, current_user: ActiveUser, data: P
 
     user_update = UserUpdate(password=data.new_password)
 
-    user_service.update_user(
-        session=session,
+    await user_service.update_user(
+        async_session=async_session,
         db_user=current_user,
         user_in=user_update,
     )
@@ -213,15 +225,15 @@ async def update_password(session: SessionDep, current_user: ActiveUser, data: P
 
 @router.get("/auth/verify-email")
 async def confirm_email_verification(
-    session: SessionDep, token: str = Query(..., description="Email verification token")
+    async_session: AsyncSessionDep, token: str = Query(..., description="Email verification token")
 ) -> APIResponse:
     """
     Confirm the user's email address using the token sent to their email.
     """
 
     try:
-        db_token = token_service.validate_email_verification_token(
-            session=session,
+        db_token = await token_service.validate_email_verification_token(
+            async_session=async_session,
             token=token,
         )
     except VerificationTokenNotFound:
@@ -234,14 +246,14 @@ async def confirm_email_verification(
 
     user_update = UserUpdate(email_verified=True)
 
-    user_service.update_user(
-        session=session,
+    await user_service.update_user(
+        async_session=async_session,
         db_user=db_token.user,
         user_in=user_update,
     )
 
     # Mark the email verification token as used
-    token_service.mark_email_verification_token_as_used(session=session, db_token=db_token)
+    await token_service.mark_email_verification_token_as_used(async_session=async_session, db_token=db_token)
 
     return APIResponse(
         status="success",
@@ -251,18 +263,18 @@ async def confirm_email_verification(
 
 
 @router.post("/auth/resend-verification")
-async def resend_verification_email(session: SessionDep, data: VerificationResend) -> APIResponse:
+async def resend_verification_email(async_session: AsyncSessionDep, data: VerificationResend) -> APIResponse:
     """
     Resend the email verification link to the user.
     """
-    db_user = user_service.get_user_by_email(session=session, email=data.email)
+    db_user = await user_service.get_user_by_email(async_session=async_session, email=data.email)
 
     if not db_user.is_active:
         raise UserInactive()
     if db_user.email_verified:
         raise EmailAlreadyVerified()
 
-    db_token = token_service.create_email_verification_token(session=session, db_user=db_user)
+    db_token = await token_service.create_email_verification_token(async_session=async_session, db_user=db_user)
 
     email_data = email_service.generate_verification_email(
         email_to=db_user.email,

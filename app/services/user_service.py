@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import security
 from app.core.exceptions import (
@@ -14,12 +14,10 @@ from app.models import User
 from app.schemas.user import UserCreate, UserUpdate
 
 
-def create_user(*, session: Session, user_create: UserCreate) -> User:
-    """
-    Create a new user in the database.
-    """
+async def create_user(*, async_session: AsyncSession, user_create: UserCreate) -> User:
     statement = select(User).where(User.email == user_create.email)
-    user = session.execute(statement).scalar_one_or_none()
+    result = await async_session.execute(statement)
+    user = result.scalar_one_or_none()
     if user:
         raise UserAlreadyExists()
 
@@ -27,42 +25,34 @@ def create_user(*, session: Session, user_create: UserCreate) -> User:
     update_dict["password_hash"] = security.get_password_hash(user_create.password)
 
     user_obj = User(**update_dict)
-    session.add(user_obj)
+    async_session.add(user_obj)
 
     try:
-        session.commit()
-        session.refresh(user_obj)
+        await async_session.commit()
+        await async_session.refresh(user_obj)
     except IntegrityError:
-        session.rollback()
+        await async_session.rollback()
         raise UserAlreadyExists()
 
     return user_obj
 
 
-def delete_user(*, session: Session, db_user: User) -> None:
-    """
-    Delete a user from the database.
-    """
-    session.delete(db_user)
-    session.commit()
+async def delete_user(*, async_session: AsyncSession, db_user: User) -> None:
+    await async_session.delete(db_user)
+    await async_session.commit()
 
 
-def get_user_by_id(*, session: Session, user_id: str) -> User:
-    """
-    Get a user by ID from the database.
-    """
-    user = session.get(User, user_id)
+async def get_user_by_id(*, async_session: AsyncSession, user_id: str) -> User:
+    user = await async_session.get(User, user_id)
     if not user:
         raise UserNotFound()
     return user
 
 
-def get_user_by_email(*, session: Session, email: str) -> User:
-    """
-    Get a user by email from the database.
-    """
+async def get_user_by_email(*, async_session: AsyncSession, email: str) -> User:
     statement = select(User).where(User.email == email)
-    db_user = session.execute(statement).scalar_one_or_none()
+    result = await async_session.execute(statement)
+    db_user = result.scalar_one_or_none()
 
     if not db_user:
         raise UserNotFound()
@@ -70,15 +60,13 @@ def get_user_by_email(*, session: Session, email: str) -> User:
     return db_user
 
 
-def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> User:
-    """
-    Update a user in the database.
-    """
+async def update_user(*, async_session: AsyncSession, db_user: User, user_in: UserUpdate) -> User:
     update_dict = user_in.model_dump(exclude_unset=True, exclude={"password"})
 
     if "email" in update_dict:
         statement = select(User).where(User.email == update_dict["email"])
-        user = session.execute(statement).scalar_one_or_none()
+        result = await async_session.execute(statement)
+        user = result.scalar_one_or_none()
         if user:
             raise UserAlreadyExists()
 
@@ -88,22 +76,19 @@ def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> User
     for key, value in update_dict.items():
         setattr(db_user, key, value)
 
-    session.add(db_user)
+    async_session.add(db_user)
     try:
-        session.commit()
-        session.refresh(db_user)
+        await async_session.commit()
+        await async_session.refresh(db_user)
     except IntegrityError:
-        session.rollback()
+        await async_session.rollback()
         raise UserAlreadyExists()
 
     return db_user
 
 
-def authenticate(*, session: Session, email: str, password: str) -> User:
-    """
-    Authenticate a user by email and password.
-    """
-    db_user = get_user_by_email(session=session, email=email)
+async def authenticate(*, async_session: AsyncSession, email: str, password: str) -> User:
+    db_user = await get_user_by_email(async_session=async_session, email=email)
     if not security.verify_password(password, db_user.password_hash):
         raise PasswordIncorrect()
 
@@ -116,8 +101,5 @@ def authenticate(*, session: Session, email: str, password: str) -> User:
 
 
 def validate_password(*, db_user: User, password: str) -> None:
-    """
-    Validate a user's password.
-    """
     if not security.verify_password(password, db_user.password_hash):
         raise PasswordIncorrect()

@@ -1,17 +1,19 @@
 import pytest
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from app.core.config import settings
 from tests.factories import UserFactory
 from tests.utils import fake
 
+pytestmark = pytest.mark.anyio
+
 
 @pytest.mark.integration
-def test_update_password_with_inactive_user(client: TestClient, user_factory: UserFactory) -> None:
-    user = user_factory.create(is_active=False)
+async def test_update_password_with_inactive_user(async_client: AsyncClient, user_factory: UserFactory) -> None:
+    user = await user_factory.create(is_active=False)
 
     reset_data = {"email": user.email}
-    response = client.post(f"{settings.API_V1_STR}/auth/password/forgot", json=reset_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/password/forgot", json=reset_data)
     response_data = response.json()
 
     assert response.status_code == 403
@@ -20,13 +22,13 @@ def test_update_password_with_inactive_user(client: TestClient, user_factory: Us
 
 
 @pytest.mark.integration
-def test_update_password_success(client: TestClient, user_factory: UserFactory) -> None:
+async def test_update_password_success(async_client: AsyncClient, user_factory: UserFactory) -> None:
     password = fake.password()
-    user = user_factory.create(password=password)
+    user = await user_factory.create(password=password)
 
     # First login to get the access token
     login_data = {"username": user.email, "password": password}
-    response = client.post(f"{settings.API_V1_STR}/auth/token", data=login_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/token", data=login_data)
     response_data = response.json()
 
     assert response.status_code == 200
@@ -35,7 +37,7 @@ def test_update_password_success(client: TestClient, user_factory: UserFactory) 
     # Update the password
     update_data = {"current_password": password, "new_password": fake.password()}
     headers = {"Authorization": f"Bearer {response_data['access_token']}"}
-    response = client.patch(f"{settings.API_V1_STR}/auth/password", json=update_data, headers=headers)
+    response = await async_client.patch(f"{settings.API_V1_STR}/auth/password", json=update_data, headers=headers)
     response_data = response.json()
 
     assert response.status_code == 200
@@ -44,9 +46,11 @@ def test_update_password_success(client: TestClient, user_factory: UserFactory) 
 
 
 @pytest.mark.integration
-def test_update_password_invalid_current_password(client: TestClient, auth_headers: dict[str, str]) -> None:
+async def test_update_password_invalid_current_password(
+    async_client: AsyncClient, auth_headers: dict[str, str]
+) -> None:
     update_data = {"current_password": "wrongpassword", "new_password": fake.password()}
-    response = client.patch(f"{settings.API_V1_STR}/auth/password", json=update_data, headers=auth_headers)
+    response = await async_client.patch(f"{settings.API_V1_STR}/auth/password", json=update_data, headers=auth_headers)
     response_data = response.json()
 
     assert response.status_code == 401
@@ -55,9 +59,9 @@ def test_update_password_invalid_current_password(client: TestClient, auth_heade
 
 
 @pytest.mark.integration
-def test_update_password_unauthenticated(client: TestClient) -> None:
+async def test_update_password_unauthenticated(async_client: AsyncClient) -> None:
     update_data = {"current_password": "oldpassword", "new_password": "newpassword"}
-    response = client.patch(f"{settings.API_V1_STR}/auth/password", json=update_data)
+    response = await async_client.patch(f"{settings.API_V1_STR}/auth/password", json=update_data)
     response_data = response.json()
 
     assert response.status_code == 401

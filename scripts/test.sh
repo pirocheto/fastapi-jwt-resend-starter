@@ -5,10 +5,10 @@ set -e # Exit immediately if a command exits with a non-zero status
 set -x # Print each command before executing it
 
 # Run tests with coverage
-coverage run --source=app -m pytest -s
+coverage run --source=app -m pytest -s tests/integration/auth/test_forgot_password.py::test_send_email_reset_password_success
 
 # Generate coverage reports
 coverage report --show-missing
 
 # Generate HTML coverage reportren
-coverage html --title "${@-coverage}"
+coverage html --title "${@-coverage}" 

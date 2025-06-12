@@ -6,7 +6,7 @@ from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from apscheduler.triggers.cron import CronTrigger  # type: ignore
 from sqlalchemy import delete
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import engine
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def purge_expired_tokens(session: Session) -> None:
+async def purge_expired_tokens(async_session: AsyncSession) -> None:
     """Remove expired or invalid tokens from the database."""
 
     now = datetime.now()
@@ -30,22 +30,22 @@ def purge_expired_tokens(session: Session) -> None:
     }
 
     for model, condition in cleanup_map.items():
-        session.execute(delete(model).where(condition))
+        await async_session.execute(delete(model).where(condition))
 
-    session.commit()
+    await async_session.commit()
 
 
-def token_cleanup_job() -> None:
-    with Session(engine) as session:
+async def token_cleanup_job() -> None:
+    async with AsyncSession(engine) as async_session:
         logger.info("Purging expired tokens from the database")
-        purge_expired_tokens(session)
+        await purge_expired_tokens(async_session)
         logger.info("Expired tokens purged successfully")
 
 
 scheduler.add_job(
     token_cleanup_job,
-    # trigger=CronTrigger(hour=4, minute=0, day="*/2"),
-    trigger=CronTrigger(second="*/2"),
+    trigger=CronTrigger(hour=4, minute=0, day="*/2"),
+    # trigger=CronTrigger(second="*/2"),
     id="clear_expired_tokens",
     replace_existing=True,
 )

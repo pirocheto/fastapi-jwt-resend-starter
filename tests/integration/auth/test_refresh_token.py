@@ -1,26 +1,30 @@
 import pytest
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from app.core.config import settings
 from tests.factories import RefreshTokenFactory, UserFactory
 from tests.utils import fake
 
+pytestmark = [
+    pytest.mark.anyio,
+    pytest.mark.integration,
+]
 
-@pytest.mark.integration
-def test_refresh_token_success(client: TestClient, user_factory: UserFactory) -> None:
+
+async def test_refresh_token_success(async_client: AsyncClient, user_factory: UserFactory) -> None:
     password = fake.password()
-    user = user_factory.create(password=password)
+    user = await user_factory.create(password=password)
 
     # First login to get the refresh token
     login_data = {"username": user.email, "password": password}
-    response = client.post(f"{settings.API_V1_STR}/auth/token", data=login_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/token", data=login_data)
     response_data = response.json()
 
     assert response.status_code == 200
     assert "refresh_token" in response_data
 
     refresh_data = {"refresh_token": response_data["refresh_token"]}
-    response = client.post(f"{settings.API_V1_STR}/auth/token/refresh", json=refresh_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/token/refresh", json=refresh_data)
     response_data = response.json()
 
     assert response.status_code == 200
@@ -28,10 +32,9 @@ def test_refresh_token_success(client: TestClient, user_factory: UserFactory) ->
     assert "refresh_token" in response_data
 
 
-@pytest.mark.integration
-def test_refresh_token_invalid(client: TestClient) -> None:
+async def test_refresh_token_invalid(async_client: AsyncClient) -> None:
     refresh_data = {"refresh_token": "invalid_token"}
-    response = client.post(f"{settings.API_V1_STR}/auth/token/refresh", json=refresh_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/token/refresh", json=refresh_data)
     response_data = response.json()
 
     assert response.status_code == 401
@@ -39,15 +42,14 @@ def test_refresh_token_invalid(client: TestClient) -> None:
     assert response_data["code"] == "refresh_token_invalid"
 
 
-@pytest.mark.integration
-def test_refresh_token_user_inactive(
-    client: TestClient, user_factory: UserFactory, refresh_token_factory: RefreshTokenFactory
+async def test_refresh_token_user_inactive(
+    async_client: AsyncClient, user_factory: UserFactory, refresh_token_factory: RefreshTokenFactory
 ) -> None:
-    user = user_factory.create(is_active=False)
-    db_token = refresh_token_factory.create(user_id=user.id)
+    user = await user_factory.create(is_active=False)
+    db_token = await refresh_token_factory.create(user_id=user.id)
 
     refresh_data = {"refresh_token": db_token.token}
-    response = client.post(f"{settings.API_V1_STR}/auth/token/refresh", json=refresh_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/token/refresh", json=refresh_data)
     response_data = response.json()
 
     assert response.status_code == 403
@@ -55,15 +57,14 @@ def test_refresh_token_user_inactive(
     assert response_data["code"] == "user_inactive"
 
 
-@pytest.mark.integration
-def test_refresh_token_email_not_verified(
-    client: TestClient, user_factory: UserFactory, refresh_token_factory: RefreshTokenFactory
+async def test_refresh_token_email_not_verified(
+    async_client: AsyncClient, user_factory: UserFactory, refresh_token_factory: RefreshTokenFactory
 ) -> None:
-    user = user_factory.create(email_verified=False)
-    db_token = refresh_token_factory.create(user_id=user.id)
+    user = await user_factory.create(email_verified=False)
+    db_token = await refresh_token_factory.create(user_id=user.id)
 
     refresh_data = {"refresh_token": db_token.token}
-    response = client.post(f"{settings.API_V1_STR}/auth/token/refresh", json=refresh_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/token/refresh", json=refresh_data)
     response_data = response.json()
 
     assert response.status_code == 403

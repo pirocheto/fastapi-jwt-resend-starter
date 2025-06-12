@@ -1,19 +1,21 @@
 import pytest
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from app.core.config import settings
 from tests.factories import UserFactory
 from tests.utils import fake
 
+pytestmark = pytest.mark.anyio
+
 
 @pytest.mark.integration
-def test_register_new_user(client: TestClient) -> None:
+async def test_register_new_user(async_client: AsyncClient) -> None:
     register_data = {
         "email": fake.email(),
         "username": fake.user_name(),
         "password": fake.password(),
     }
-    response = client.post(f"{settings.API_V1_STR}/auth/register", json=register_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/register", json=register_data)
     response_data = response.json()
 
     assert response.status_code == 201
@@ -22,15 +24,15 @@ def test_register_new_user(client: TestClient) -> None:
 
 
 @pytest.mark.integration
-def test_register_existing_user(client: TestClient, user_factory: UserFactory) -> None:
+async def test_register_existing_user(async_client: AsyncClient, user_factory: UserFactory) -> None:
     password = fake.password()
-    user = user_factory.create(password=password)
+    user = await user_factory.create(password=password)
     register_data = {
         "email": user.email,
         "username": user.username,
         "password": password,
     }
-    response = client.post(f"{settings.API_V1_STR}/auth/register", json=register_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/register", json=register_data)
     response_data = response.json()
 
     assert response.status_code == 409
@@ -39,13 +41,13 @@ def test_register_existing_user(client: TestClient, user_factory: UserFactory) -
 
 
 @pytest.mark.integration
-def test_register_invalid_email(client: TestClient) -> None:
+async def test_register_invalid_email(async_client: AsyncClient) -> None:
     register_data = {
         "email": "invalid-email",
         "username": fake.user_name(),
         "password": fake.password(),
     }
-    response = client.post(f"{settings.API_V1_STR}/auth/register", json=register_data)
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/register", json=register_data)
     response_data = response.json()
 
     assert response.status_code == 422

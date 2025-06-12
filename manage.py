@@ -27,9 +27,9 @@ def createsuperuser(
 
     from app.core.database import engine, init_superuser
 
-    with Session(engine) as session:
+    with Session(engine) as async_session:
         init_superuser(
-            session=session,
+            async_session=async_session,
             email=email,
             username=username,
             password=password,
@@ -45,8 +45,8 @@ def init() -> None:
 
     from app.core.database import engine, init_db
 
-    with Session(engine) as session:
-        init_db(session)
+    with Session(engine) as async_session:
+        init_db(async_session)
 
 
 if __name__ == "__main__":

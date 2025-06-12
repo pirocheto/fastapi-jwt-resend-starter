@@ -87,7 +87,7 @@ class Settings(BaseSettings):
     def SQLALCHEMY_DATABASE_URI(self) -> MultiHostUrl:  # noqa: N802
         """Build the SQLAlchemy database URI from the settings"""
         return MultiHostUrl.build(
-            scheme="postgresql+psycopg",
+            scheme="postgresql+asyncpg",
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_SERVER,

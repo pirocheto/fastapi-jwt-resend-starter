@@ -1,13 +1,16 @@
 import pytest
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from app.core.config import settings
-from tests.factories import UserFactory
+
+pytestmark = [
+    pytest.mark.anyio,
+    pytest.mark.integration,
+]
 
 
-@pytest.mark.integration
-def test_get_user_details(client: TestClient, user_factory: UserFactory, auth_headers: dict[str, str]) -> None:
-    response = client.get(f"{settings.API_V1_STR}/users/me", headers=auth_headers)
+async def test_get_user_details(async_client: AsyncClient, auth_headers: dict[str, str]) -> None:
+    response = await async_client.get(f"{settings.API_V1_STR}/users/me", headers=auth_headers)
     response_data = response.json()
 
     assert response.status_code == 200
