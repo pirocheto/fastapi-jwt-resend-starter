@@ -40,9 +40,6 @@ class Settings(BaseSettings):
     # The root directory of the application
     app_dir: Path = root_dir / "app"
 
-    # Root path for the application
-    API_V1_STR: str = "/api/v1"
-
     # Secret key to encode/decode JWT tokens
     # This should be kept secret in production
     SECRET_KEY: str = secrets.token_urlsafe(32)
@@ -96,7 +93,6 @@ class Settings(BaseSettings):
         )
 
     DEFAULT_SUPERUSER_EMAIL: EmailStr
-    DEFAULT_SUPERUSER_USERNAME: str
     DEFAULT_SUPERUSER_PASSWORD: str
 
     # The API key for the Resend service

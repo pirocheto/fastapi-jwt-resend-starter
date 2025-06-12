@@ -36,7 +36,7 @@ class JWTokenData:
 
 
 # Hash a password using bcrypt
-def get_password_hash(password: str) -> str:
+def hash_password(password: str) -> str:
     pwd_bytes = password.encode("utf-8")
     salt = bcrypt.gensalt(rounds=12)
     hashed_password = bcrypt.hashpw(password=pwd_bytes, salt=salt)
