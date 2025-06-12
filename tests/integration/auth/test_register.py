@@ -15,6 +15,7 @@ def test_register_new_user(client: TestClient) -> None:
     }
     response = client.post(f"{settings.API_V1_STR}/auth/register", json=register_data)
     response_data = response.json()
+
     assert response.status_code == 201
     assert response_data["status"] == "success"
     assert response_data["code"] == "user_registered"

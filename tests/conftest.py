@@ -72,5 +72,5 @@ def auth_headers(user_factory: UserFactory, client: TestClient) -> dict[str, str
     response = client.post(f"{settings.API_V1_STR}/auth/token", data=login_data)
     response_data = response.json()
 
-    access_token = response_data["data"]["access_token"]
+    access_token = response_data["access_token"]
     return {"Authorization": f"Bearer {access_token}"}

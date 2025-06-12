@@ -17,16 +17,15 @@ def test_refresh_token_success(client: TestClient, user_factory: UserFactory) ->
     response_data = response.json()
 
     assert response.status_code == 200
-    assert "refresh_token" in response_data["data"]
+    assert "refresh_token" in response_data
 
-    refresh_data = {"refresh_token": response_data["data"]["refresh_token"]}
+    refresh_data = {"refresh_token": response_data["refresh_token"]}
     response = client.post(f"{settings.API_V1_STR}/auth/token/refresh", json=refresh_data)
     response_data = response.json()
 
     assert response.status_code == 200
-    assert response_data["status"] == "success"
-    assert "access_token" in response_data["data"]
-    assert "refresh_token" in response_data["data"]
+    assert "access_token" in response_data
+    assert "refresh_token" in response_data
 
 
 @pytest.mark.integration

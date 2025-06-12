@@ -61,7 +61,6 @@ def real_scheduler_context() -> Generator[None]:
     finally:
         scheduler.shutdown()
         logger.info("Scheduler stopped")
-        print("Scheduler stopped")
 
 
 @contextmanager

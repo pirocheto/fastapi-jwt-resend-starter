@@ -35,9 +35,9 @@ router = APIRouter(tags=["auth"])
 
 
 @router.post("/auth/token")
-def login_for_access_token(
+async def login_for_access_token(
     session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-) -> APIResponse[Tokens]:
+) -> Tokens:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
@@ -53,19 +53,14 @@ def login_for_access_token(
     access_token = token_service.create_access_token(db_user=user)
     refresh_token = token_service.create_refresh_token(session=session, db_user=user)
 
-    return APIResponse[Tokens](
-        status="success",
-        code="user_login_success",
-        message="User logged in successfully",
-        data=Tokens(
-            access_token=access_token,
-            refresh_token=refresh_token.token,
-        ),
+    return Tokens(
+        access_token=access_token,
+        refresh_token=refresh_token.token,
     )
 
 
 @router.post("/auth/token/refresh")
-def refresh_access_token(session: SessionDep, data: AccessTokenRefresh) -> APIResponse[Tokens]:
+async def refresh_access_token(session: SessionDep, data: AccessTokenRefresh) -> Tokens:
     """
     Refresh the access token using a valid refresh token.
     """
@@ -83,19 +78,14 @@ def refresh_access_token(session: SessionDep, data: AccessTokenRefresh) -> APIRe
     new_refresh_token = token_service.rotate_refresh_token(session=session, db_refresh_token=db_refresh_token)
     new_access_token = token_service.create_access_token(db_user=db_refresh_token.user)
 
-    return APIResponse[Tokens](
-        status="success",
-        code="user_refresh_token_success",
-        message="User access token refreshed successfully",
-        data=Tokens(
-            access_token=new_access_token,
-            refresh_token=new_refresh_token.token,
-        ),
+    return Tokens(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token.token,
     )
 
 
 @router.post("/auth/register", status_code=status.HTTP_201_CREATED)
-def register_new_user(session: SessionDep, data: UserRegister) -> APIResponse[None]:
+async def register_new_user(session: SessionDep, data: UserRegister) -> APIResponse:
     """
     Register a new user.
     """
@@ -128,7 +118,7 @@ def register_new_user(session: SessionDep, data: UserRegister) -> APIResponse[No
 
 
 @router.post("/auth/password/forgot", status_code=status.HTTP_200_OK)
-def forgot_password(session: SessionDep, data: PasswordReset) -> APIResponse[None]:
+async def forgot_password(session: SessionDep, data: PasswordReset) -> APIResponse:
     """
     Send a password reset link to the user's email.
     """
@@ -163,7 +153,7 @@ def forgot_password(session: SessionDep, data: PasswordReset) -> APIResponse[Non
 
 
 @router.post("/auth/password/reset", status_code=status.HTTP_200_OK)
-def update_password_with_token(session: SessionDep, data: PasswordUpdateToken) -> APIResponse[None]:
+async def update_password_with_token(session: SessionDep, data: PasswordUpdateToken) -> APIResponse:
     """
     Update the user's password using a valid password reset token.
     """
@@ -197,7 +187,7 @@ def update_password_with_token(session: SessionDep, data: PasswordUpdateToken) -
 
 
 @router.patch("/auth/password", status_code=status.HTTP_200_OK)
-def update_password(session: SessionDep, current_user: ActiveUser, data: PasswordUpdate) -> APIResponse[None]:
+async def update_password(session: SessionDep, current_user: ActiveUser, data: PasswordUpdate) -> APIResponse:
     """
     Update the user's password.
     """
@@ -222,9 +212,9 @@ def update_password(session: SessionDep, current_user: ActiveUser, data: Passwor
 
 
 @router.get("/auth/verify-email", status_code=status.HTTP_200_OK)
-def confirm_email_verification(
+async def confirm_email_verification(
     session: SessionDep, token: str = Query(..., description="Email verification token")
-) -> APIResponse[None]:
+) -> APIResponse:
     """
     Confirm the user's email address using the token sent to their email.
     """
@@ -261,7 +251,7 @@ def confirm_email_verification(
 
 
 @router.post("/auth/resend-verification")
-def resend_verification_email(session: SessionDep, data: VerificationResend) -> APIResponse[None]:
+async def resend_verification_email(session: SessionDep, data: VerificationResend) -> APIResponse:
     """
     Resend the email verification link to the user.
     """

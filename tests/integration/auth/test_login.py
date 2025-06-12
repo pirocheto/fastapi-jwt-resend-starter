@@ -16,9 +16,8 @@ def test_login_success(client: TestClient, user_factory: UserFactory) -> None:
     response_data = response.json()
 
     assert response.status_code == 200
-    assert response_data["status"] == "success"
-    assert "access_token" in response_data["data"]
-    assert "refresh_token" in response_data["data"]
+    assert "access_token" in response_data
+    assert "refresh_token" in response_data
 
 
 @pytest.mark.integration

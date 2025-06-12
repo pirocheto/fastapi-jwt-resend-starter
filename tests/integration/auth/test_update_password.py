@@ -30,11 +30,11 @@ def test_update_password_success(client: TestClient, user_factory: UserFactory) 
     response_data = response.json()
 
     assert response.status_code == 200
-    assert "access_token" in response_data["data"]
+    assert "access_token" in response_data
 
     # Update the password
     update_data = {"current_password": password, "new_password": fake.password()}
-    headers = {"Authorization": f"Bearer {response_data['data']['access_token']}"}
+    headers = {"Authorization": f"Bearer {response_data['access_token']}"}
     response = client.patch(f"{settings.API_V1_STR}/auth/password", json=update_data, headers=headers)
     response_data = response.json()
 
