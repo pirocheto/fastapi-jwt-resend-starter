@@ -2,14 +2,14 @@ from app.domain.models.user import User
 from app.infrastructure.db.models import UserModel
 
 
-def orm_to_domain(user_model: UserModel) -> User:
+def orm_to_domain(db_model: UserModel) -> User:
     return User(
-        id=user_model.id,
-        email=user_model.email,
-        hashed_password=user_model.hashed_password,
-        is_verified=user_model.is_verified,
-        created_at=user_model.created_at,
-        updated_at=user_model.updated_at,
+        id=db_model.id,
+        email=db_model.email,
+        hashed_password=db_model.hashed_password,
+        is_verified=db_model.is_verified,
+        created_at=db_model.created_at,
+        updated_at=db_model.updated_at,
     )
 
 

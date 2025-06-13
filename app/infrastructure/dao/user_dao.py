@@ -31,10 +31,10 @@ class UserDAO:
     async def save(self, user: User) -> UserModel:
         """Save a new user to the database."""
 
-        user_model = domain_to_orm(user)
+        db_model = domain_to_orm(user)
 
-        self.session.add(user_model)
+        self.session.add(db_model)
         await self.session.commit()
-        await self.session.refresh(user_model)
+        await self.session.refresh(db_model)
 
-        return user_model
+        return db_model
