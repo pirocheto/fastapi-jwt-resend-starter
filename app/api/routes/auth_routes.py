@@ -17,6 +17,7 @@ async def register_user(user_in: UserRegisterDTO, user_service: UserServiceDep) 
 
 @router.post("/auth/login", response_model=TokenPairDTO, status_code=status.HTTP_200_OK)
 async def login_user(
-    credentials: Annotated[OAuth2PasswordRequestForm, Depends()], auth_service: AuthServiceDep
+    credentials: Annotated[OAuth2PasswordRequestForm, Depends()],
+    auth_service: AuthServiceDep,
 ) -> Any:
     return await auth_service.login(email=credentials.username, password=credentials.password)
