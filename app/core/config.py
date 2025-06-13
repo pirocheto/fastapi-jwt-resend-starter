@@ -115,7 +115,7 @@ class Settings(BaseSettings):
     PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 24
 
     # The expiration time for the email verification token
-    EMAIL_VERIFICATION_TOKEN_EXPIRE_HOURS: int = 48
+    VERIFICATION_TOKEN_EXPIRE_HOURS: int = 48
 
     @computed_field  # type: ignore[prop-decorator]
     @property

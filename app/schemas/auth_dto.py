@@ -1,0 +1,18 @@
+from pydantic import BaseModel, ConfigDict
+
+
+class TokenPairDTO(BaseModel):
+    """Pair of access and refresh tokens."""
+
+    access_token: str
+    refresh_token: str
+    type: str = "Bearer"
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+                "refresh_token": "dGhpc2lzYXJlZnJlc2h0b2tlbmZvcmV4YW1wbGUuMTIzNDU2Nzg5MA",
+            }
+        }
+    )
