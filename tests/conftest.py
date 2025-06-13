@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.db.models import Base
 from app.infrastructure.db.session import engine
 from app.main import app
+from tests.factories import UserFactory
 from tests.utils import fake
 
 
@@ -42,3 +43,8 @@ def mocked_send_email() -> Generator[MagicMock]:
     with patch("resend.Emails.send") as mock:
         mock.return_value = {"id": fake.uuid4()}
         yield mock
+
+
+@pytest.fixture(scope="function")
+def user_factory(session: AsyncSession) -> UserFactory:
+    return UserFactory(session)

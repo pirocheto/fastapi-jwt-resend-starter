@@ -1,4 +1,5 @@
 # Base declarative, session maker, etc.
+import logging
 from collections.abc import AsyncGenerator
 from logging import getLogger
 
@@ -16,5 +17,19 @@ engine = create_async_engine(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession]:
-    async with AsyncSession(engine, expire_on_commit=False) as session:
+    async with AsyncSession(
+        engine,
+        # expire_on_commit=False,
+    ) as session:
         yield session
+
+
+logger = logging.getLogger(__name__)
+
+
+async def init_db() -> None:
+    from app.infrastructure.db.models import Base
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database initialized")

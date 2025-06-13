@@ -19,3 +19,12 @@ class InvalidCredentialsError(AppError):
             code="invalid_credentials",
             detail="Invalid email or password",
         )
+
+
+class InvalidRefreshTokenError(AppError):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            code="invalid_refresh_token",
+            detail="Refresh token is invalid or expired",
+        )

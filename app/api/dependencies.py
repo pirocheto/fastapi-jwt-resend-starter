@@ -12,33 +12,8 @@ from app.domain.services.user_service import UserService
 from app.infrastructure.db.session import get_db
 from app.infrastructure.security import tokens
 
-# --- Database Dependency ---
-AsyncSessionDep = Annotated[AsyncSession, Depends(get_db)]
 
-
-# --- Services Dependencies ---
-async def get_user_service(session: AsyncSessionDep) -> UserService:
-    return UserService(session=session)
-
-
-UserServiceDep = Annotated[UserService, Depends(get_user_service)]
-
-
-async def get_auth_service(session: AsyncSessionDep) -> AuthService:
-    return AuthService(session=session)
-
-
-AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
-
-# --- Auth Dependencies ---
-reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
-
-CredentialsDep = Annotated[OAuth2PasswordRequestForm, Depends()]
-
-AccessTokenDep = Annotated[str, Depends(reusable_oauth2)]
-
-
-async def get_current_user(user_service: UserServiceDep, access_token: AccessTokenDep) -> User:
+async def get_current_user(user_service: "UserServiceDep", access_token: "AccessTokenDep") -> User:
     token_payload = tokens.decode_access_token(access_token)
     if not token_payload:
         raise InvalidAccessTokenError()
@@ -48,4 +23,21 @@ async def get_current_user(user_service: UserServiceDep, access_token: AccessTok
     return user
 
 
+async def get_user_service(session: "AsyncSessionDep") -> UserService:
+    return UserService(session=session)
+
+
+async def get_auth_service(session: "AsyncSessionDep") -> AuthService:
+    return AuthService(session=session)
+
+
+# --- Service Dependencies ---
+AsyncSessionDep = Annotated[AsyncSession, Depends(get_db)]
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+
+# --- Authentication Dependencies ---
+CredentialsDep = Annotated[OAuth2PasswordRequestForm, Depends()]
+reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
+AccessTokenDep = Annotated[str, Depends(reusable_oauth2)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
