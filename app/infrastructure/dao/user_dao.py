@@ -1,11 +1,10 @@
 import uuid
 
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.domain.models.user import User
-from app.infrastructure.db.models import UserModel
-from app.mappers.user_mapper import domain_to_orm
+from app.infrastructure.db.models import UserModel, VerificationTokenModel
 
 
 class UserDAO:
@@ -28,13 +27,13 @@ class UserDAO:
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
-    async def save(self, user: User) -> UserModel:
-        """Save a new user to the database."""
+    async def add(self, user: UserModel) -> None:
+        """Add a new user to the database."""
 
-        db_model = domain_to_orm(user)
+        self.session.add(user)
 
-        self.session.add(db_model)
-        await self.session.commit()
-        await self.session.refresh(db_model)
+    async def delete_token_by_user_id(self, user_id: uuid.UUID) -> None:
+        """Delete all refresh tokens associated with a user ID."""
 
-        return db_model
+        statement = delete(VerificationTokenModel).where(VerificationTokenModel.user_id == user_id)
+        await self.session.execute(statement)

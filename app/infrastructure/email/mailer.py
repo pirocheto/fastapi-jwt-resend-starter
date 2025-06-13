@@ -22,8 +22,8 @@ class EmailData:
 
 
 TEMPLATE_DIRS = {
-    "html": BASE_DIR / "infrastructure/templates/html",
-    "raw": BASE_DIR / "infrastructure/templates/raw",
+    "html": BASE_DIR / "infrastructure/email/templates/html",
+    "raw": BASE_DIR / "infrastructure/email/templates/raw",
 }
 
 

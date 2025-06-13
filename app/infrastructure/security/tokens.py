@@ -7,7 +7,7 @@ import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
 
 from app.core.config import settings
-from app.domain.models.access_token import AccessTokenPayload
+from app.domain.models import AccessTokenPayload
 
 ALGORITHM = "HS256"
 

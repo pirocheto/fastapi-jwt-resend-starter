@@ -1,4 +1,5 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.db.models import Base
 from app.infrastructure.db.session import engine
 from app.main import app
+from tests.utils import fake
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -25,12 +27,18 @@ def anyio_backend() -> str:
 
 @pytest.fixture(scope="function")
 async def session() -> AsyncGenerator[AsyncSession]:
-    async with AsyncSession(engine) as async_session:
-        yield async_session
-        # await async_session.rollback()
+    async with AsyncSession(engine, expire_on_commit=False) as session:
+        yield session
 
 
 @pytest.fixture(scope="function")
 async def client() -> AsyncGenerator[AsyncClient]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
+
+
+@pytest.fixture(scope="function", autouse=True)
+def mocked_send_email() -> Generator[MagicMock]:
+    with patch("resend.Emails.send") as mock:
+        mock.return_value = {"id": fake.uuid4()}
+        yield mock

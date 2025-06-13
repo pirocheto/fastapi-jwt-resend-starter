@@ -1,13 +1,13 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class TokenPairDTO(BaseModel):
+class TokenPair(BaseModel):
     """Pair of access and refresh tokens."""
 
     access_token: str = Field(..., description="JWT access token")
     refresh_token: str = Field(..., description="Opaque refresh token")
     type: str = Field(
-        "Bearer",
+        default="Bearer",
         description="Token type, typically 'Bearer' for access tokens",
     )
 

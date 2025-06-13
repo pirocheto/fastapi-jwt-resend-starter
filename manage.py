@@ -16,7 +16,7 @@ def init() -> None:
 
     import asyncio
 
-    from app.infrastructure.db.init import init_db
+    from app.infrastructure.db.utils import init_db
 
     asyncio.run(init_db())
 
