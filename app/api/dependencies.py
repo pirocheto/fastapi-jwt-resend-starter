@@ -32,7 +32,9 @@ AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 # --- Auth Dependencies ---
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
+
 CredentialsDep = Annotated[OAuth2PasswordRequestForm, Depends()]
+
 AccessTokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
