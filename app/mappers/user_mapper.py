@@ -13,12 +13,12 @@ def orm_to_domain(db_model: UserModel) -> User:
     )
 
 
-def domain_to_orm(user: User) -> UserModel:
+def domain_to_orm(domain_user: User) -> UserModel:
     return UserModel(
-        id=user.id,
-        email=user.email,
-        hashed_password=user.hashed_password,
-        is_verified=user.is_verified,
-        created_at=user.created_at,
-        updated_at=user.updated_at,
+        id=domain_user.id,
+        email=domain_user.email,
+        hashed_password=domain_user.hashed_password,
+        is_verified=domain_user.is_verified,
+        created_at=domain_user.created_at,
+        updated_at=domain_user.updated_at,
     )
