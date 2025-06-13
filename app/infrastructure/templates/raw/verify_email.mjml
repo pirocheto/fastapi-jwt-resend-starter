@@ -1,0 +1,12 @@
+Hello {{ username }},
+
+Thank you for registering on {{ project_name }}.
+To activate your account, please click on the link below:
+
+{{ link }}
+
+This link will expire in {{ expiration_hours }} hours.
+
+If you did not request this registration, you can ignore this message.
+
+— The {{ project_name }} team

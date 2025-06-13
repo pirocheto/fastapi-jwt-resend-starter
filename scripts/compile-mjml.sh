@@ -4,8 +4,8 @@
 set -e # Exit immediately if a command exits with a non-zero status
 # set -x # Print each command before executing it
 
-SRC_DIR="app/email-templates/html/src"
-BUILD_DIR="app/email-templates/html/build"
+SRC_DIR="app/infrastructure/templates/mjml"
+BUILD_DIR="app/infrastructure/templates/html"
 
 mkdir -p "$BUILD_DIR"
 
