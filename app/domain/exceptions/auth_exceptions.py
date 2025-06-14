@@ -28,3 +28,12 @@ class InvalidRefreshTokenError(AppError):
             code="invalid_refresh_token",
             detail="Refresh token is invalid or expired",
         )
+
+
+class InvalidPasswordResetTokenError(AppError):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="invalid_password_reset_token",
+            detail="Password reset token is invalid or expired",
+        )

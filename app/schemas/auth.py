@@ -29,11 +29,9 @@ class UserRegisterResponse(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
-                "user": {
-                    "id": "123e4567-e89b-12d3-a456-426614174000",
-                    "email": "user@example.com",
-                    "created_at": "2024-06-01T12:34:56Z",
-                }
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "email": "user@example.com",
+                "created_at": "2024-06-01T12:34:56Z",
             }
         }
     }
@@ -69,5 +67,63 @@ class RefreshAccessTokenRequest(BaseModel):
     refresh_token: str = Field(..., description="Opaque refresh token to be used for refreshing the access token")
 
     model_config = ConfigDict(
-        json_schema_extra={"example": {"refresh_token": "dGhpc2lzYXJlZnJlc2h0b2tlbmZvcmV4YW1wbGUuMTIzNDU2Nzg5MA"}}
+        json_schema_extra={
+            "example": {
+                "refresh_token": "dGhpc2lzYXJlZnJlc2h0b2tlbmZvcmV4YW1wbGUuMTIzNDU2Nzg5MA",
+            }
+        }
+    )
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Request model for forgot password functionality."""
+
+    email: EmailStr = Field(..., description="Email address of the user requesting password reset")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"email": "user@example.com"},
+        }
+    )
+
+
+class ResetPasswordRequest(BaseModel):
+    """Request model for resetting user password."""
+
+    token: str = Field(..., description="Opaque token for password reset")
+    new_password: str = Field(..., min_length=8, max_length=64, description="New secure password")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "token": "dGhpc2lzYXJlZnJlc2h0b2tlbmZvcmV4YW1wbGUuMTIzNDU2Nzg5MA",
+                "new_password": "newstrongpassword123",
+            }
+        }
+    )
+
+
+class VerifyEmailRequest(BaseModel):
+    """Request model for verifying user email."""
+
+    token: str = Field(..., description="Verification token sent to the user's email")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "token": "dGhpc2lzYXJlZnZlcmlmaWNhdGlvbnRva2VuMTIzNDU2Nzg5MA",
+            }
+        }
+    )
+
+
+class ResendVerifEmailRequest(BaseModel):
+    """Request model for resending verification link to user's email."""
+
+    email: EmailStr = Field(..., description="Email address of the user to resend verification link")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"email": "user@example.com"},
+        }
     )

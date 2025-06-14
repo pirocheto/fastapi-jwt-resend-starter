@@ -5,10 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tests.factories import UserFactory
 from tests.utils import fake
 
-pytestmark = pytest.mark.anyio
+pytestmark = [
+    pytest.mark.anyio,
+    pytest.mark.integration,
+]
 
 
-@pytest.mark.integration
 async def test_refresh_token_success(client: AsyncClient, user_factory: UserFactory, session: AsyncSession) -> None:
     password = fake.password()
     user = await user_factory.create(password=password)

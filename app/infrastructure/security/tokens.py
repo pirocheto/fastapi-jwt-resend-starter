@@ -1,21 +1,20 @@
 import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
 
 from app.core.config import settings
-from app.domain.models import AccessTokenPayload
 
 ALGORITHM = "HS256"
 
 
-def create_access_token(subject: Any) -> str:
+def create_access_token(subject: uuid.UUID) -> str:
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    now = datetime.now()
+    now = datetime.now(UTC)
     expire = now + access_token_expires
     payload = {
         # Expiration time
@@ -34,12 +33,11 @@ def create_access_token(subject: Any) -> str:
         "aud": settings.FRONTEND_HOST,
     }
 
-    AccessTokenPayload.model_validate(payload)
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
     return token
 
 
-def decode_access_token(token: str) -> AccessTokenPayload | None:
+def decode_access_token(token: str) -> Any | None:
     try:
         decoded_token = jwt.decode(
             token,
@@ -48,7 +46,7 @@ def decode_access_token(token: str) -> AccessTokenPayload | None:
             issuer=settings.BACKEND_HOST,
             audience=settings.FRONTEND_HOST,
         )
-        return AccessTokenPayload.model_validate(decoded_token)
+        return decoded_token.get("sub")
 
     except (ExpiredSignatureError, InvalidTokenError):
         return None

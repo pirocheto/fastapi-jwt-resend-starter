@@ -12,7 +12,7 @@ def default_refresh_token_expires_at() -> datetime:
     return datetime.now() + timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
 
 
-def default_verification_token_expires_at() -> datetime:
+def default_verif_token_expires_at() -> datetime:
     return datetime.now() + timedelta(hours=settings.VERIFICATION_TOKEN_EXPIRE_HOURS)
 
 
@@ -39,7 +39,7 @@ class UserModel(Base):
     refresh_tokens: Mapped[list["RefreshTokenModel"]] = relationship(
         "RefreshTokenModel", back_populates="user", cascade="all, delete-orphan"
     )
-    email_verification_tokens: Mapped[list["VerificationTokenModel"]] = relationship(
+    email_verif_tokens: Mapped[list["VerificationTokenModel"]] = relationship(
         "VerificationTokenModel", back_populates="user", cascade="all, delete-orphan"
     )
     password_reset_tokens: Mapped[list["PasswordResetTokenModel"]] = relationship(
@@ -78,11 +78,11 @@ class VerificationTokenModel(Base):
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=default_verification_token_expires_at,
+        default=default_verif_token_expires_at,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    user: Mapped[UserModel] = relationship("UserModel", back_populates="email_verification_tokens")
+    user: Mapped[UserModel] = relationship("UserModel", back_populates="email_verif_tokens")
 
 
 class PasswordResetTokenModel(Base):
@@ -92,7 +92,7 @@ class PasswordResetTokenModel(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    token: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
+    hashed_token: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

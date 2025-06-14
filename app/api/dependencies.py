@@ -14,10 +14,10 @@ from app.infrastructure.security import tokens
 
 
 async def get_current_user(user_service: "UserServiceDep", access_token: "AccessTokenDep") -> User:
-    token_payload = tokens.decode_access_token(access_token)
-    if not token_payload:
+    user_id = tokens.decode_access_token(access_token)
+    if not user_id:
         raise InvalidAccessTokenError()
-    user = await user_service.get_user_by_id(token_payload.sub)
+    user = await user_service.get_user_by_id(user_id=user_id)
     if not user:
         raise UserNotFoundError()
     return user

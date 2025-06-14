@@ -12,7 +12,7 @@ class RefreshTokenDAO:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def save(self, refresh_token: RefreshTokenModel) -> None:
+    async def add(self, refresh_token: RefreshTokenModel) -> None:
         """Add a new refresh token to the database."""
 
         self.session.add(refresh_token)

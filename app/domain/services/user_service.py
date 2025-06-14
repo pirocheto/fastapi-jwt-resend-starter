@@ -14,10 +14,10 @@ class UserService:
         self.user_dao = UserDAO(session)
         self.verif_token_dao = VerificationTokenDAO(session)
 
-    async def get_user_by_id(self, id: uuid.UUID) -> User:
+    async def get_user_by_id(self, user_id: uuid.UUID) -> User:
         """Retrieve a user by ID."""
 
-        db_user = await self.user_dao.get_by_id(id)
+        db_user = await self.user_dao.get_by_id(user_id=user_id)
 
         if not db_user:
             raise UserNotFoundError()

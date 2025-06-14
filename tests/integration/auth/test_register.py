@@ -3,10 +3,12 @@ from httpx import AsyncClient
 
 from tests.utils import fake
 
-pytestmark = pytest.mark.anyio
+pytestmark = [
+    pytest.mark.anyio,
+    pytest.mark.integration,
+]
 
 
-@pytest.mark.integration
 async def test_register_new_user_success(client: AsyncClient) -> None:
     register_data = {
         "email": fake.email(),
